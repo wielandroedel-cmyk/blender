@@ -1,5 +1,7 @@
 # generic files to ignore
 .*
+# MCP server config for Claude Code (see tools/mcp_octane/README.de.md)
+!/.mcp.json
 
 # python temp paths
 __pycache__/
