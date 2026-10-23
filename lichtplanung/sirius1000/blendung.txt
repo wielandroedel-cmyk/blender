@@ -1,0 +1,24 @@
+Blendungsbewertung SIRIUS_1000, 111.246 lm, Person sitzend 8 m hinter der Leuchte, Augenhöhe 1.2 m, Blick nach vorn 2° nach unten
+
+Montagehöhe 5 m:
+  Abstand Auge-Leuchte 8,86 m, Leuchte 25,4° über der Horizontalen, Winkel zur Blickrichtung theta = 27,4°
+  Ausstrahlungswinkel zur Person: C180, gamma = 64,6°
+  Lichtstärke zur Person I = 4.789 cd
+  sichtbarer Glasanteil (Rest verdeckt die Blende) 45 %, Raumwinkel 0.00056 sr
+  Leuchtdichte im sichtbaren Glasteil 109 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 49 kcd/m²)
+  E am Auge (senkrecht zur Blickrichtung) 54,20 lx, E_v (vertikal) 55,15 lx
+  Schleierleuchtdichte L_vl = 0,722 cd/m²
+  E_h Boden: Mittel 432 lx, Max 2.158 lx; L_ve (rho 20%) = 0,96 cd/m²
+  GR = 30,5 (rho 10%), 24,0 (rho 20%), 20,1 (rho 30%), bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)
+
+Montagehöhe 8 m:
+  Abstand Auge-Leuchte 10,50 m, Leuchte 40,4° über der Horizontalen, Winkel zur Blickrichtung theta = 42,4°
+  Ausstrahlungswinkel zur Person: C180, gamma = 49,6°
+  Lichtstärke zur Person I = 10.371 cd
+  sichtbarer Glasanteil (Rest verdeckt die Blende) 69 %, Raumwinkel 0.00093 sr
+  Leuchtdichte im sichtbaren Glasteil 102 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 70 kcd/m²)
+  E am Auge (senkrecht zur Blickrichtung) 69,51 lx, E_v (vertikal) 71,68 lx
+  Schleierleuchtdichte L_vl = 0,387 cd/m²
+  E_h Boden: Mittel 296 lx, Max 843 lx; L_ve (rho 20%) = 0,66 cd/m²
+  GR = 27,5 (rho 10%), 21,0 (rho 20%), 17,2 (rho 30%), bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)
+
