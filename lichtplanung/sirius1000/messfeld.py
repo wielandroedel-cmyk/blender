@@ -33,10 +33,12 @@ DATA_DIR = argv[0] if argv else os.path.dirname(bpy.data.filepath)
 sys.path.insert(0, DATA_DIR)
 from ldt2ies import read_ies  # noqa: E402
 
-# Dieselbe IES-Datei wie das Licht in der Szene (absolute Werte in cd).
-IES_PATH = os.path.join(DATA_DIR, "sirius1000.ies")
-
 _scene = bpy.context.scene
+# Dieselbe IES-Datei wie das Licht in der Szene (absolute Werte in cd).
+IES_PATH = os.path.join(DATA_DIR, _scene.get("ies_file", "sirius1000.ies"))
+VARIANT = _scene.get("variant", "")
+VARIANT_TEXT = {"": "Blende V2 wie geliefert (Lochung 3,4 %)",
+                "perf50": "Blende V2 mit 50 % Lochung (LVK abgeschätzt)"}.get(VARIANT, VARIANT)
 MOUNT_HEIGHT = float(_scene.get("mount_height", 5.0))
 ROOM_FRONT = float(_scene.get("room_front", 8.0))
 ROOM_BACK = float(_scene.get("room_back", -10.0))  # y der Rückwand
@@ -60,7 +62,7 @@ else:
 UP = Vector((0, 0, 1))
 # "rechts" für einen Betrachter, der auf die Wand blickt
 WALL_RIGHT = (-WALL_NORMAL).cross(UP)
-SUFFIX = f"_{WALL}_{MOUNT_HEIGHT:g}m"
+SUFFIX = f"_{WALL}_{MOUNT_HEIGHT:g}m" + (f"_{VARIANT}" if VARIANT else "")
 FIELD_OFFSET = 0.02       # Abstand Messfläche - Wand [m]
 TEXEL = 0.05              # Auflösung der Messfläche [m]
 GRID = 1.0                # Raster der angezeigten Luxwerte [m]
@@ -488,8 +490,8 @@ def write_report(e_total, grid_vals, stats):
     ax.set_xlabel(f"Position x [m], Blick auf die {WALL_NAME} (0 = Achse der Leuchte)")
     ax.set_ylabel("Höhe z [m]")
     ax.set_title(f"Vertikale Beleuchtungsstärke Ev auf der {WALL_TITLE}\n"
-                 "Siteco SIRIUS 1000 (1 Modul), LVK 5XA7100W40A13DA-Z mit außenliegender "
-                 "Blende V2\n" + f"{ies_flux():,.0f}".replace(",", ".") +
+                 f"Siteco SIRIUS 1000 (1 Modul), {VARIANT_TEXT}\n" +
+                 f"{ies_flux():,.0f}".replace(",", ".") +
                  f" lm, Montagehöhe {MOUNT_HEIGHT:g} m, "
                  f"Reflexionsgrad Raum {room_reflectance():.0%}",
                  fontsize=11)

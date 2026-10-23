@@ -3,7 +3,8 @@ Blendungsbewertung für die sitzende Person hinter der Leuchte (ohne Blender aus
 
     python blendung.py [ordner]
 
-Bewertet für die Montagehöhen 5 m und 8 m:
+Bewertet für die Montagehöhen 5 m und 8 m und vergleicht die Blende wie geliefert
+(Lochung 3,4 %) mit der Variante 50 % Lochung (LVK aus perforation.py, abgeschätzt):
   * Geometrie Auge -> Leuchte (Abstand, Erhebungswinkel, Ausstrahlungswinkel gamma in C180)
   * Lichtstärke I in Richtung Auge (aus der IES-Datei, Blende in der LVK enthalten)
   * mittlere Leuchtdichte der Leuchte, wie die Person sie sieht
@@ -34,8 +35,11 @@ import numpy as np
 DATA_DIR = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, DATA_DIR)
 from ldt2ies import read_ies  # noqa: E402
+from perforation import D_OLD, d_for_open_area, hole_transmission  # noqa: E402
 
-IES_PATH = os.path.join(DATA_DIR, "sirius1000.ies")
+# (Kürzel, Beschreibung, IES-Datei, Lochdurchmesser der Blende [mm])
+VARIANTS = [("", "Blende heute (Lochung 3,4 %)", "sirius1000.ies", D_OLD),
+            ("perf50", "Lochung 50 %", "sirius1000_perf50.ies", d_for_open_area(0.5))]
 
 MOUNT_HEIGHTS = [5.0, 8.0]
 PERSON_DISTANCE = 8.0       # Person hinter der Leuchte [m]
@@ -98,7 +102,8 @@ def floor_eh_mean(lvk, h, step=0.1):
     return float(eh.mean()), float(eh.max())
 
 
-def evaluate(lvk, h, behind, eye_height=EYE_HEIGHT, rho=RHO_DEFAULT, eh_mean=None):
+def evaluate(lvk, h, behind, eye_height=EYE_HEIGHT, rho=RHO_DEFAULT, eh_mean=None,
+             d_hole=D_OLD):
     light = np.array([0.0, 0.0, h])
     eye = np.array([0.0, -behind, eye_height])
     intensity, d, gamma, cang = lvk.toward(light, eye)
@@ -116,17 +121,20 @@ def evaluate(lvk, h, behind, eye_height=EYE_HEIGHT, rho=RHO_DEFAULT, eh_mean=Non
         eh_mean = floor_eh_mean(lvk, h)[0]
     l_ve = 0.035 * rho * eh_mean / math.pi
     gr = 27 + 24 * math.log10(l_vl / l_ve ** 0.9) if l_ve > 0 and l_vl > 0 else float('inf')
-    # Leuchtdichte: projizierte Fläche; Anteil, den die Blende (hinten) verdeckt
+    # Leuchtdichte: projizierte Fläche; Anteil, den die Blende (hinten) verdeckt. Durch die
+    # Lochung des Stirnblechs ist zusätzlich ein Teil des verdeckten Glases zu sehen.
     a = LUM_LEN_C0 * LUM_WID_C90
     cos_g = math.cos(math.radians(gamma))
     visible_len = max(0.0, LUM_LEN_C0 - VISOR_DEPTH * math.tan(math.radians(gamma)))
+    tau = float(hole_transmission(d_hole, math.sin(math.radians(gamma))))
+    eff_len = visible_len + (LUM_LEN_C0 - visible_len) * tau
     l_mean = intensity / (a * cos_g)
-    l_visible = intensity / (visible_len * LUM_WID_C90 * cos_g) if visible_len > 0 else 0.0
-    omega = visible_len * LUM_WID_C90 * cos_g / d ** 2
+    l_visible = intensity / (eff_len * LUM_WID_C90 * cos_g) if eff_len > 0 else 0.0
+    omega = eff_len * LUM_WID_C90 * cos_g / d ** 2
     return dict(h=h, behind=behind, d=d, elevation=elevation, gamma=gamma, theta=theta,
                 I=intensity, E_eye=e_eye, E_v=e_v, E_n=e_normal, L_vl=l_vl, Eh_mean=eh_mean,
                 L_ve=l_ve, rho=rho, GR=gr, L_mean=l_mean, L_visible=l_visible,
-                visible_frac=visible_len / LUM_LEN_C0, omega=omega)
+                visible_frac=eff_len / LUM_LEN_C0, omega=omega)
 
 
 def fmt(v, nd=1):
@@ -134,43 +142,47 @@ def fmt(v, nd=1):
 
 
 def main():
-    lvk = LVK(IES_PATH)
-    results = []
-    lines = [f"Blendungsbewertung {lvk.name}, {fmt(lvk.flux, 0)} lm, Person sitzend "
-             f"{PERSON_DISTANCE:g} m hinter der Leuchte, Augenhöhe {EYE_HEIGHT:g} m, "
-             f"Blick nach vorn {VIEW_DOWN_DEG:g}° nach unten", ""]
-    for h in MOUNT_HEIGHTS:
-        eh_mean, eh_max = floor_eh_mean(lvk, h)
-        r = evaluate(lvk, h, PERSON_DISTANCE, eh_mean=eh_mean)
-        r["Eh_max"] = eh_max
-        r["GR_rho"] = {rho: evaluate(lvk, h, PERSON_DISTANCE, rho=rho, eh_mean=eh_mean)["GR"]
-                       for rho in RHO_VARIANTS}
-        results.append(r)
-        lines += [
-            f"Montagehöhe {h:g} m:",
-            f"  Abstand Auge-Leuchte {fmt(r['d'], 2)} m, Leuchte {fmt(r['elevation'])}° über der "
-            f"Horizontalen, Winkel zur Blickrichtung theta = {fmt(r['theta'])}°",
-            f"  Ausstrahlungswinkel zur Person: C180, gamma = {fmt(r['gamma'])}°",
-            f"  Lichtstärke zur Person I = {fmt(r['I'], 0)} cd",
-            f"  sichtbarer Glasanteil (Rest verdeckt die Blende) {r['visible_frac'] * 100:.0f} %, "
-            f"Raumwinkel {r['omega']:.5f} sr",
-            f"  Leuchtdichte im sichtbaren Glasteil {fmt(r['L_visible'] / 1000, 0)} kcd/m² "
-            f"(gemittelt über die ganze Lichtaustrittsfläche {fmt(r['L_mean'] / 1000, 0)} kcd/m²)",
-            f"  E am Auge (senkrecht zur Blickrichtung) {fmt(r['E_eye'], 2)} lx, "
-            f"E_v (vertikal) {fmt(r['E_v'], 2)} lx",
-            f"  Schleierleuchtdichte L_vl = {fmt(r['L_vl'], 3)} cd/m²",
-            f"  E_h Boden: Mittel {fmt(eh_mean, 0)} lx, Max {fmt(eh_max, 0)} lx; "
-            f"L_ve (rho {RHO_DEFAULT:.0%}) = {fmt(r['L_ve'], 2)} cd/m²",
-            "  GR = " + ", ".join(f"{fmt(g, 1)} (rho {rho:.0%})"
-                                  for rho, g in r["GR_rho"].items()) +
-            ", bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)",
-            "",
-        ]
-
-    # Verlauf über den Abstand hinter der Leuchte
+    results, sweep, lines = [], {}, []
     behind = np.arange(1.0, 10.01, 0.25)
-    sweep = {h: [evaluate(lvk, h, b, eh_mean=floor_eh_mean(lvk, h)[0]) for b in behind]
-             for h in MOUNT_HEIGHTS}
+    for key, label, ies, d_hole in VARIANTS:
+        path = os.path.join(DATA_DIR, ies)
+        if not os.path.exists(path):
+            print(f"{ies} fehlt, Variante '{label}' übersprungen")
+            continue
+        lvk = LVK(path)
+        lines += [f"=== {label}: {lvk.name}, {fmt(lvk.flux, 0)} lm, Person sitzend "
+                  f"{PERSON_DISTANCE:g} m hinter der Leuchte, Augenhöhe {EYE_HEIGHT:g} m, "
+                  f"Blick nach vorn {VIEW_DOWN_DEG:g}° nach unten", ""]
+        for h in MOUNT_HEIGHTS:
+            eh_mean, eh_max = floor_eh_mean(lvk, h)
+            r = evaluate(lvk, h, PERSON_DISTANCE, eh_mean=eh_mean, d_hole=d_hole)
+            r.update(Eh_max=eh_max, variant=key, label=label, lvk=lvk)
+            r["GR_rho"] = {rho: evaluate(lvk, h, PERSON_DISTANCE, rho=rho, eh_mean=eh_mean,
+                                         d_hole=d_hole)["GR"] for rho in RHO_VARIANTS}
+            results.append(r)
+            sweep[(key, h)] = [evaluate(lvk, h, b, eh_mean=eh_mean, d_hole=d_hole)
+                               for b in behind]
+            lines += [
+                f"Montagehöhe {h:g} m:",
+                f"  Abstand Auge-Leuchte {fmt(r['d'], 2)} m, Leuchte {fmt(r['elevation'])}° über "
+                f"der Horizontalen, Winkel zur Blickrichtung theta = {fmt(r['theta'])}°",
+                f"  Ausstrahlungswinkel zur Person: C180, gamma = {fmt(r['gamma'])}°",
+                f"  Lichtstärke zur Person I = {fmt(r['I'], 0)} cd",
+                f"  sichtbarer Glasanteil (direkt + durch die Lochung) "
+                f"{r['visible_frac'] * 100:.0f} %, Raumwinkel {r['omega']:.5f} sr",
+                f"  Leuchtdichte sichtbares Glas {fmt(r['L_visible'] / 1000, 0)} kcd/m² "
+                f"(gemittelt über die ganze Lichtaustrittsfläche {fmt(r['L_mean'] / 1000, 0)} "
+                f"kcd/m²)",
+                f"  E am Auge (senkrecht zur Blickrichtung) {fmt(r['E_eye'], 2)} lx, "
+                f"E_v (vertikal) {fmt(r['E_v'], 2)} lx",
+                f"  Schleierleuchtdichte L_vl = {fmt(r['L_vl'], 3)} cd/m²",
+                f"  E_h Boden: Mittel {fmt(eh_mean, 0)} lx, Max {fmt(eh_max, 0)} lx; "
+                f"L_ve (rho {RHO_DEFAULT:.0%}) = {fmt(r['L_ve'], 2)} cd/m²",
+                "  GR = " + ", ".join(f"{fmt(g, 1)} (rho {rho:.0%})"
+                                      for rho, g in r["GR_rho"].items()) +
+                ", bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)",
+                "",
+            ]
 
     for line in lines:
         print(line)
@@ -178,21 +190,21 @@ def main():
         f.write("\n".join(lines) + "\n")
     with open(os.path.join(DATA_DIR, "blendung_verlauf.csv"), "w", newline="") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["Montagehoehe [m]", "Abstand hinter Leuchte [m]", "gamma [Grad]",
-                    "theta [Grad]", "I [cd]", "E_Auge [lx]", "E_v [lx]", "L_vl [cd/m2]",
-                    f"GR (rho {RHO_DEFAULT:.0%})"])
-        for h in MOUNT_HEIGHTS:
-            for r in sweep[h]:
-                w.writerow([f"{h:g}", f"{r['behind']:.2f}", f"{r['gamma']:.1f}",
+        w.writerow(["Variante", "Montagehoehe [m]", "Abstand hinter Leuchte [m]",
+                    "gamma [Grad]", "theta [Grad]", "I [cd]", "E_Auge [lx]", "E_v [lx]",
+                    "L_vl [cd/m2]", f"GR (rho {RHO_DEFAULT:.0%})"])
+        for (key, h), rows in sweep.items():
+            for r in rows:
+                w.writerow([key or "heute", f"{h:g}", f"{r['behind']:.2f}", f"{r['gamma']:.1f}",
                             f"{r['theta']:.1f}", f"{r['I']:.0f}", f"{r['E_eye']:.3f}",
                             f"{r['E_v']:.3f}", f"{r['L_vl']:.4f}", f"{r['GR']:.1f}"])
     try:
-        write_report(lvk, results, behind, sweep)
+        write_report(results, behind, sweep)
     except ImportError:
         print("matplotlib nicht verfügbar, kein PNG-Bericht")
 
 
-def write_report(lvk, results, behind, sweep):
+def write_report(results, behind, sweep):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -200,15 +212,19 @@ def write_report(lvk, results, behind, sweep):
     fig = plt.figure(figsize=(14, 15), dpi=120)
     gs = fig.add_gridspec(3, 2, height_ratios=[1.0, 1.0, 1.25], hspace=0.38, wspace=0.22)
     colors = {5.0: "#1f6fd1", 8.0: "#d1491f"}
-    fig.suptitle(f"Blendungsbewertung – Siteco SIRIUS 1000 (1 Modul) mit außenliegender Blende V2,"
-                 f" {fmt(lvk.flux, 0)} lm\nPerson sitzend, Augenhöhe {EYE_HEIGHT:g} m, Blick "
-                 f"horizontal nach vorn (2° nach unten), Leuchte frei im Raum, Glas nach unten",
-                 fontsize=13)
+    styles = {"": "-", "perf50": "--"}
+    names = {key: label for key, label, _, _ in VARIANTS}
+    lines_for = [(key, h) for key, _, _, _ in VARIANTS for h in MOUNT_HEIGHTS
+                 if (key, h) in sweep]
+    fig.suptitle("Blendungsbewertung – Siteco SIRIUS 1000 (1 Modul) mit außenliegender Blende V2:"
+                 " heute vs. 50 % Lochung\n"
+                 f"Person sitzend, Augenhöhe {EYE_HEIGHT:g} m, Blick horizontal nach vorn (2° nach"
+                 " unten), Leuchte frei im Raum, Glas nach unten", fontsize=13)
 
     ax = fig.add_subplot(gs[0, 0])
-    for h in MOUNT_HEIGHTS:
-        ax.plot(behind, [r["GR"] for r in sweep[h]], color=colors[h], lw=2,
-                label=f"Montagehöhe {h:g} m")
+    for key, h in lines_for:
+        ax.plot(behind, [r["GR"] for r in sweep[(key, h)]], color=colors[h], ls=styles[key],
+                lw=2, label=f"{h:g} m, {names[key]}")
     for name, lim in GR_LIMITS[:2]:
         ax.axhline(lim, color="k", ls="--", lw=0.8)
         ax.text(behind[0] + 0.05, lim + 0.4, f"GR {lim}: {name}", fontsize=8)
@@ -221,9 +237,9 @@ def write_report(lvk, results, behind, sweep):
     ax.legend(fontsize=9)
 
     ax = fig.add_subplot(gs[0, 1])
-    for h in MOUNT_HEIGHTS:
-        ax.semilogy(behind, [r["I"] for r in sweep[h]], color=colors[h], lw=2,
-                    label=f"I zur Person, {h:g} m")
+    for key, h in lines_for:
+        ax.semilogy(behind, [r["I"] for r in sweep[(key, h)]], color=colors[h], ls=styles[key],
+                    lw=2, label=f"{h:g} m, {names[key]}")
     for zone, pre, post, _, _ in OBTRUSIVE[1:]:
         ax.axhline(pre, color="k", ls=":", lw=0.7)
         ax.text(behind[-1] - 0.05, pre * 1.08, f"{zone.split()[0]} {fmt(pre, 0)} cd", fontsize=7,
@@ -236,9 +252,9 @@ def write_report(lvk, results, behind, sweep):
     ax.legend(fontsize=9)
 
     ax = fig.add_subplot(gs[1, 0])
-    for h in MOUNT_HEIGHTS:
-        ax.plot(behind, [r["E_v"] for r in sweep[h]], color=colors[h], lw=2,
-                label=f"E_v am Auge, {h:g} m")
+    for key, h in lines_for:
+        ax.plot(behind, [r["E_v"] for r in sweep[(key, h)]], color=colors[h], ls=styles[key],
+                lw=2, label=f"{h:g} m, {names[key]}")
     for zone, _, _, pre, post in OBTRUSIVE[1:]:
         ax.axhline(pre, color="k", ls=":", lw=0.7)
         ax.text(behind[0] + 0.05, pre + 0.3, f"{zone.split()[0]} {pre} lx", fontsize=7)
@@ -251,33 +267,41 @@ def write_report(lvk, results, behind, sweep):
 
     ax = fig.add_subplot(gs[1, 1])
     g = np.linspace(0, 120, 241)
-    ax.semilogy(g, np.maximum(lvk.intensity(np.zeros_like(g), g), 1), color="0.5", lw=1.5,
-                label="C0 (nach vorn, ohne Blende)")
-    ax.semilogy(g, np.maximum(lvk.intensity(np.full_like(g, 180.0), g), 1), color="k", lw=2,
-                label="C180 (nach hinten, mit Blende)")
+    first = results[0]["lvk"]
+    ax.semilogy(g, np.maximum(first.intensity(np.zeros_like(g), g), 1), color="0.6", lw=1.5,
+                label="C0 (nach vorn)")
+    seen = set()
     for r in results:
-        ax.plot(r["gamma"], r["I"], "o", color=colors[r["h"]], ms=8,
-                label=f"Person bei {r['h']:g} m: γ {fmt(r['gamma'])}°, {fmt(r['I'], 0)} cd")
+        if r["variant"] not in seen:
+            seen.add(r["variant"])
+            ax.semilogy(g, np.maximum(r["lvk"].intensity(np.full_like(g, 180.0), g), 1),
+                        color="k", ls=styles[r["variant"]], lw=2,
+                        label=f"C180 (nach hinten), {names[r['variant']]}")
+    for r in results:
+        ax.plot(r["gamma"], r["I"], "o" if not r["variant"] else "s", color=colors[r["h"]],
+                ms=7, label=f"Person {r['h']:g} m, {names[r['variant']]}: {fmt(r['I'], 0)} cd")
     ax.set_xlabel("Ausstrahlungswinkel γ [°] (0 = senkrecht nach unten)")
     ax.set_ylabel("Lichtstärke [cd]")
     ax.set_title("LVK in der Ebene Leuchte – Person")
     ax.set_xlim(0, 120)
     ax.grid(alpha=0.3, which="both")
-    ax.legend(fontsize=8.5, loc="lower left")
+    ax.legend(fontsize=7.5, loc="lower left")
 
     ax = fig.add_subplot(gs[2, :])
     ax.axis("off")
-    rows = [["", *[f"Montagehöhe {r['h']:g} m" for r in results]]]
+    results = sorted(results, key=lambda r: (r["h"], r["variant"]))
+    short = {"": "heute (3,4 %)", "perf50": "Lochung 50 %"}
+    rows = [["", *[f"{r['h']:g} m – {short.get(r['variant'], r['variant'])}" for r in results]]]
     spec = [("Abstand Auge – Leuchte", lambda r: f"{fmt(r['d'], 2)} m"),
-            ("Leuchte über der Horizontalen / Winkel zur Blickrichtung θ",
+            ("Leuchte über Horizontale / Winkel zum Blick θ",
              lambda r: f"{fmt(r['elevation'])}° / {fmt(r['theta'])}°"),
             ("Ausstrahlungswinkel zur Person", lambda r: f"C180, γ = {fmt(r['gamma'])}°"),
             ("Lichtstärke zur Person I", lambda r: f"{fmt(r['I'], 0)} cd"),
-            ("Sichtbarer Glasanteil (Rest hinter der Blende)",
+            ("Sichtbarer Glasanteil (direkt + durch die Lochung)",
              lambda r: f"{r['visible_frac'] * 100:.0f} %"),
-            ("Leuchtdichte sichtbares Glas (Mittel über ganze Fläche)",
+            ("Leuchtdichte sichtbares Glas (Mittel ganze Fläche)",
              lambda r: f"{fmt(r['L_visible'] / 1000, 0)} kcd/m² ({fmt(r['L_mean'] / 1000, 0)})"),
-            ("E am Auge senkrecht zur Blickrichtung / E_v vertikal",
+            ("E am Auge senkr. zum Blick / E_v vertikal",
              lambda r: f"{fmt(r['E_eye'], 2)} lx / {fmt(r['E_v'], 2)} lx"),
             ("Schleierleuchtdichte L_vl = 10·E_Auge/θ²", lambda r: f"{fmt(r['L_vl'], 3)} cd/m²"),
             ("E_h Boden Mittel (Direktlicht)", lambda r: f"{fmt(r['Eh_mean'], 0)} lx"),
@@ -285,16 +309,15 @@ def write_report(lvk, results, behind, sweep):
              lambda r: f"{fmt(r['L_ve'], 2)} cd/m²"),
             ("GR bei ρ = 10 % / 20 % / 30 %",
              lambda r: " / ".join(fmt(r["GR_rho"][x], 1) for x in RHO_VARIANTS)),
-            ("Störlicht: I ≤ Richtwert vor Sperrzeit für Zone",
-             lambda r: zones_ok(r["I"], 1)),
-            ("Störlicht: E_v ≤ Richtwert vor Sperrzeit für Zone",
-             lambda r: zones_ok(r["E_v"], 3))]
+            ("Störlicht I ≤ Richtwert vor Sperrzeit", lambda r: zones_ok(r["I"], 1)),
+            ("Störlicht E_v ≤ Richtwert vor Sperrzeit", lambda r: zones_ok(r["E_v"], 3))]
     for name, f in spec:
         rows.append([name, *[f(r) for r in results]])
+    n = len(results)
     table = ax.table(cellText=rows, loc="upper center", cellLoc="left",
-                     colWidths=[0.46, 0.27, 0.27])
+                     colWidths=[0.32] + [0.68 / n] * n)
     table.auto_set_font_size(False)
-    table.set_fontsize(10)
+    table.set_fontsize(8.5)
     table.scale(1, 1.55)
     for (i, j), cell in table.get_celld().items():
         if i == 0:
@@ -313,7 +336,7 @@ def write_report(lvk, results, behind, sweep):
 
 def zones_ok(value, idx):
     ok = [z[0].split()[0] for z in OBTRUSIVE if value <= z[idx]]
-    return ("eingehalten für " + ", ".join(ok)) if ok else "in keiner Zone eingehalten"
+    return ("ja: " + ", ".join(ok)) if ok else "in keiner Zone"
 
 
 if __name__ == "__main__":

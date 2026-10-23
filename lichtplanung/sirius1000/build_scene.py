@@ -4,9 +4,10 @@ außenliegende Blende V2, Lichtstrom und Leistung halbiert)
 frei im Raum in 5 m Höhe, sitzende Person 8 m hinter der Leuchte, Raum 8 m nach vorn.
 
 Ausführen (Blender 4.2+ / 5.x):
-    blender --background --python build_scene.py -- <ordner_mit_dateien> [montagehoehe_m]
-    (Montagehöhe Standard 5 m; Raumhöhe = Montagehöhe + 2 m. Ergebnis:
-     sirius1000_raum_<hoehe>m.blend)
+    blender --background --python build_scene.py -- <ordner_mit_dateien> [montagehoehe_m] [variante]
+    (Montagehöhe Standard 5 m; Raumhöhe = Montagehöhe + 2 m. Variante "perf50" = Blende mit
+     50 % Lochung, nutzt sirius1000_perf50.glb/.ies aus perforation.py. Ergebnis:
+     sirius1000[_perf50]_raum_<hoehe>m.blend)
 oder im Blender-Text-Editor öffnen und "Run Script" (dann DATA_DIR unten anpassen).
 
 Benötigte Dateien im Ordner:
@@ -39,8 +40,10 @@ from mathutils import Matrix, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 DATA_DIR = argv[0] if argv else os.path.dirname(os.path.abspath(__file__))
-GLB_PATH = os.path.join(DATA_DIR, "sirius1000.glb")
-IES_PATH = os.path.join(DATA_DIR, "sirius1000.ies")
+VARIANT = argv[2] if len(argv) > 2 else ""   # "" = Blende wie geliefert, "perf50" = 50 % Lochung
+_base = "sirius1000" + (f"_{VARIANT}" if VARIANT else "")
+GLB_PATH = os.path.join(DATA_DIR, _base + ".glb")
+IES_PATH = os.path.join(DATA_DIR, _base + ".ies")
 
 MOUNT_HEIGHT = float(argv[1]) if len(argv) > 1 else 5.0  # Höhe Glasmitte über Boden [m]
 PERSON_DISTANCE = 8.0     # Person sitzt so weit hinter der Leuchte [m]
@@ -723,7 +726,9 @@ def main():
     scene["room_front"] = ROOM_FRONT
     scene["room_back"] = -PERSON_DISTANCE - ROOM_BEHIND_PERSON
     scene["person_distance"] = PERSON_DISTANCE
-    out = os.path.join(DATA_DIR, f"sirius1000_raum_{MOUNT_HEIGHT:g}m.blend")
+    scene["variant"] = VARIANT
+    scene["ies_file"] = os.path.basename(IES_PATH)
+    out = os.path.join(DATA_DIR, f"{_base}_raum_{MOUNT_HEIGHT:g}m.blend")
     bpy.ops.wm.save_as_mainfile(filepath=out, compress=True)
     print("Gespeichert:", out)
 

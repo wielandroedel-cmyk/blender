@@ -1,11 +1,11 @@
-Blendungsbewertung SIRIUS_1000, 111.246 lm, Person sitzend 8 m hinter der Leuchte, Augenhöhe 1.2 m, Blick nach vorn 2° nach unten
+=== Blende heute (Lochung 3,4 %): SIRIUS_1000, 111.246 lm, Person sitzend 8 m hinter der Leuchte, Augenhöhe 1.2 m, Blick nach vorn 2° nach unten
 
 Montagehöhe 5 m:
   Abstand Auge-Leuchte 8,86 m, Leuchte 25,4° über der Horizontalen, Winkel zur Blickrichtung theta = 27,4°
   Ausstrahlungswinkel zur Person: C180, gamma = 64,6°
   Lichtstärke zur Person I = 4.789 cd
-  sichtbarer Glasanteil (Rest verdeckt die Blende) 45 %, Raumwinkel 0.00056 sr
-  Leuchtdichte im sichtbaren Glasteil 109 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 49 kcd/m²)
+  sichtbarer Glasanteil (direkt + durch die Lochung) 46 %, Raumwinkel 0.00057 sr
+  Leuchtdichte sichtbares Glas 107 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 49 kcd/m²)
   E am Auge (senkrecht zur Blickrichtung) 54,20 lx, E_v (vertikal) 55,15 lx
   Schleierleuchtdichte L_vl = 0,722 cd/m²
   E_h Boden: Mittel 432 lx, Max 2.158 lx; L_ve (rho 20%) = 0,96 cd/m²
@@ -15,10 +15,34 @@ Montagehöhe 8 m:
   Abstand Auge-Leuchte 10,50 m, Leuchte 40,4° über der Horizontalen, Winkel zur Blickrichtung theta = 42,4°
   Ausstrahlungswinkel zur Person: C180, gamma = 49,6°
   Lichtstärke zur Person I = 10.371 cd
-  sichtbarer Glasanteil (Rest verdeckt die Blende) 69 %, Raumwinkel 0.00093 sr
-  Leuchtdichte im sichtbaren Glasteil 102 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 70 kcd/m²)
+  sichtbarer Glasanteil (direkt + durch die Lochung) 69 %, Raumwinkel 0.00093 sr
+  Leuchtdichte sichtbares Glas 101 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 70 kcd/m²)
   E am Auge (senkrecht zur Blickrichtung) 69,51 lx, E_v (vertikal) 71,68 lx
   Schleierleuchtdichte L_vl = 0,387 cd/m²
   E_h Boden: Mittel 296 lx, Max 843 lx; L_ve (rho 20%) = 0,66 cd/m²
   GR = 27,5 (rho 10%), 21,0 (rho 20%), 17,2 (rho 30%), bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)
+
+=== Lochung 50 %: SIRIUS_1000_Blende_Lochung_50pct, 113.646 lm, Person sitzend 8 m hinter der Leuchte, Augenhöhe 1.2 m, Blick nach vorn 2° nach unten
+
+Montagehöhe 5 m:
+  Abstand Auge-Leuchte 8,86 m, Leuchte 25,4° über der Horizontalen, Winkel zur Blickrichtung theta = 27,4°
+  Ausstrahlungswinkel zur Person: C180, gamma = 64,6°
+  Lichtstärke zur Person I = 6.409 cd
+  sichtbarer Glasanteil (direkt + durch die Lochung) 70 %, Raumwinkel 0.00087 sr
+  Leuchtdichte sichtbares Glas 94 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 65 kcd/m²)
+  E am Auge (senkrecht zur Blickrichtung) 72,54 lx, E_v (vertikal) 73,80 lx
+  Schleierleuchtdichte L_vl = 0,966 cd/m²
+  E_h Boden: Mittel 439 lx, Max 2.158 lx; L_ve (rho 20%) = 0,98 cd/m²
+  GR = 33,3 (rho 10%), 26,8 (rho 20%), 23,0 (rho 30%), bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)
+
+Montagehöhe 8 m:
+  Abstand Auge-Leuchte 10,50 m, Leuchte 40,4° über der Horizontalen, Winkel zur Blickrichtung theta = 42,4°
+  Ausstrahlungswinkel zur Person: C180, gamma = 49,6°
+  Lichtstärke zur Person I = 11.647 cd
+  sichtbarer Glasanteil (direkt + durch die Lochung) 82 %, Raumwinkel 0.00110 sr
+  Leuchtdichte sichtbares Glas 96 kcd/m² (gemittelt über die ganze Lichtaustrittsfläche 79 kcd/m²)
+  E am Auge (senkrecht zur Blickrichtung) 78,06 lx, E_v (vertikal) 80,50 lx
+  Schleierleuchtdichte L_vl = 0,435 cd/m²
+  E_h Boden: Mittel 300 lx, Max 843 lx; L_ve (rho 20%) = 0,67 cd/m²
+  GR = 28,6 (rho 10%), 22,1 (rho 20%), 18,3 (rho 30%), bei rho 0 %: nicht definiert (keine Umgebungsleuchtdichte)
 
