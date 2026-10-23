@@ -1,4 +1,11 @@
-"""Convert an EULUMDAT (.ldt) file to IESNA LM-63-2002 (.ies) for Cycles."""
+"""Convert an EULUMDAT (.ldt) file to IESNA LM-63-2002 (.ies) for Cycles.
+
+    python ldt2ies.py eingabe.ldt ausgabe.ies [modulfaktor] [name]
+
+Der optionale Modulfaktor skaliert Lichtstrom, Leistung und Länge der Lichtaustrittsfläche,
+z. B. 0.5 für ein Modul (SIRIUS 1000) aus der LDT einer Leuchte mit zwei Modulen
+(SIRIUS 2000). Die relative Lichtverteilung (cd/klm) bleibt dabei unverändert.
+"""
 import sys
 
 
@@ -61,6 +68,19 @@ def read_ldt(path):
     return d
 
 
+def scale_modules(d, factor, name=None):
+    """Lichtstrom, Leistung und leuchtende Länge auf einen Teil der Module skalieren."""
+    for s in d["sets"]:
+        s["flux"] *= factor
+        s["watt"] *= factor
+    d["lum_len"] *= factor
+    d["length"] *= factor
+    d["module_factor"] = factor
+    if name:
+        d["name"] = name
+    return d
+
+
 def write_ies(d, path):
     flux = sum(s["flux"] * s["n"] for s in d["sets"])
     scale = flux / 1000.0 * d["cfac"]  # cd/klm -> cd
@@ -72,13 +92,15 @@ def write_ies(d, path):
         f"[LUMCAT] {d['number']}",
         f"[LUMINAIRE] {d['name']}",
         f"[LAMP] {d['sets'][0]['type']} {d['sets'][0]['cct']} {d['sets'][0]['cri']}",
-        "[OTHER] Converted from EULUMDAT",
+        "[OTHER] Converted from EULUMDAT"
+        + (f", module factor {d['module_factor']:g} applied to flux, power and length"
+           if d.get("module_factor", 1) != 1 else ""),
         "TILT=NONE",
         # lamps, lumens/lamp, multiplier, n vert, n horiz, photometric type C,
         # units meters, width, length, height (luminous opening)
         f"1 {flux:.0f} 1 {len(d['gamma'])} {len(c_vals)} 1 2 "
         f"{d['lum_wid'] / 1000:.3f} {d['lum_len'] / 1000:.3f} 0",
-        f"1 1 {d['sets'][0]['watt']:.0f}",
+        f"1 1 {d['sets'][0]['watt']:.1f}",
         " ".join(f"{g:g}" for g in d["gamma"]),
         " ".join(f"{c:g}" for c in c_vals),
     ]
@@ -87,8 +109,28 @@ def write_ies(d, path):
     open(path, "w").write("\n".join(out) + "\n")
 
 
+def read_ies(path):
+    """Liest eine mit write_ies erzeugte IES-Datei (Typ C): C-Winkel, gamma-Winkel,
+    Lichtstärken in cd als Tabelle [C, gamma], Lichtstrom und Leuchtenname."""
+    lines = open(path, encoding="latin-1").read().splitlines()
+    name = next((l[12:].strip() for l in lines if l.startswith("[LUMINAIRE]")), "")
+    tilt = next(i for i, l in enumerate(lines) if l.startswith("TILT="))
+    tok = " ".join(lines[tilt + 1:]).split()
+    lamps, lumens, mult, nv, nh = (float(t) for t in tok[:5])
+    nv, nh = int(nv), int(nh)
+    i = 10 + 3  # 10 Werte Kopfzeile + Ballast, Ballast-Photometrie, Leistung
+    gamma = [float(t) for t in tok[i:i + nv]]
+    i += nv
+    c = [float(t) for t in tok[i:i + nh]]
+    i += nh
+    table = [[float(t) * mult for t in tok[i + k * nv:i + (k + 1) * nv]] for k in range(nh)]
+    return c, gamma, table, lamps * lumens, name
+
+
 if __name__ == "__main__":
     d = read_ldt(sys.argv[1])
+    if len(sys.argv) > 3:
+        scale_modules(d, float(sys.argv[3]), sys.argv[4] if len(sys.argv) > 4 else None)
     write_ies(d, sys.argv[2])
     peak = max((max(r), d["c"][ci], d["gamma"][r.index(max(r))]) for ci, r in d["full"].items())
     flux = sum(s["flux"] * s["n"] for s in d["sets"])

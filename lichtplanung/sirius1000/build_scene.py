@@ -1,22 +1,26 @@
 """
-Blender-Szene: Siteco SIRIUS 2000 (5XA7100W40A13DA-Z, außenliegende Blende V2)
+Blender-Szene: Siteco SIRIUS 1000 (ein Modul; LVK aus 5XA7100W40A13DA-Z SIRIUS 2000,
+außenliegende Blende V2, Lichtstrom und Leistung halbiert)
 frei im Raum in 5 m Höhe, sitzende Person 8 m hinter der Leuchte, Raum 8 m nach vorn.
 
 Ausführen (Blender 4.2+ / 5.x):
-    blender --background --python build_scene.py -- <ordner_mit_dateien>
+    blender --background --python build_scene.py -- <ordner_mit_dateien> [montagehoehe_m]
+    (Montagehöhe Standard 5 m; Raumhöhe = Montagehöhe + 2 m. Ergebnis:
+     sirius1000_raum_<hoehe>m.blend)
 oder im Blender-Text-Editor öffnen und "Run Script" (dann DATA_DIR unten anpassen).
 
 Benötigte Dateien im Ordner:
-    sirius2000.glb   (aus der STEP-Datei konvertiert, siehe step2glb.py)
-    sirius2000.ies   (aus der LDT-Datei konvertiert, siehe ldt2ies.py)
+    sirius1000.glb   (aus der STEP-Datei konvertiert, siehe step2glb.py)
+    sirius1000.ies   (aus der LDT-Datei konvertiert, ein Modul:
+                      python ldt2ies.py sirius2000.ldt sirius1000.ies 0.5 SIRIUS_1000)
 
 Danach optional das Messfeld an der Stirnwand berechnen (Falschfarben + Luxwerte):
-    blender --background sirius2000_raum.blend --python messfeld.py -- <ordner_mit_dateien>
+    blender --background sirius1000_raum_5m.blend --python messfeld.py -- <ordner_mit_dateien>
 
 Rendern nur mit Cycles (EEVEE unterstützt keine IES-Lichtverteilungen).
 
 Koordinaten (Meter, Z oben):
-    Leuchte (Mitte Lichtaustrittsfläche/Glas): (0, 0, 5)
+    Leuchte (Mitte Lichtaustrittsfläche/Glas): (0, 0, Montagehöhe)
     Person (Sitzposition):                     (0, -8, 0), Blick nach +Y
     Lichtrichtung: nach vorn = +Y, also von der Person weg.
 """
@@ -35,15 +39,15 @@ from mathutils import Matrix, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 DATA_DIR = argv[0] if argv else os.path.dirname(os.path.abspath(__file__))
-GLB_PATH = os.path.join(DATA_DIR, "sirius2000.glb")
-IES_PATH = os.path.join(DATA_DIR, "sirius2000.ies")
+GLB_PATH = os.path.join(DATA_DIR, "sirius1000.glb")
+IES_PATH = os.path.join(DATA_DIR, "sirius1000.ies")
 
-MOUNT_HEIGHT = 5.0        # Höhe der Lichtaustrittsfläche über Boden [m]
+MOUNT_HEIGHT = float(argv[1]) if len(argv) > 1 else 5.0  # Höhe Glasmitte über Boden [m]
 PERSON_DISTANCE = 8.0     # Person sitzt so weit hinter der Leuchte [m]
 ROOM_FRONT = 8.0          # Raumtiefe vor der Leuchte [m]
 ROOM_BEHIND_PERSON = 2.0  # Raum hinter der Person [m]
 ROOM_WIDTH = 12.0         # [m]
-ROOM_HEIGHT = 7.0         # [m]
+ROOM_HEIGHT = MOUNT_HEIGHT + 2.0  # [m], 2 m Luft über der Leuchte
 TILT_DEG = 0.0            # Neigung der Leuchte nach vorn (0 = Glas horizontal, wie gemessen)
 EYE_HEIGHT_SEATED = 1.2   # Augenhöhe der sitzenden Person [m]
 REFLECTANCE = 0.0         # Reflexionsgrad Boden, Wände, Decke (0 = nur Direktlicht)
@@ -242,8 +246,9 @@ def build_person(collection):
 #   hinten (C180, zur Person hin), der Hauptstrahl (C0, gamma 35°) geht zur Seite +Z_modell.
 GLASS_CENTER_MODEL = Vector((0.184, 0.046, 0.0))
 GLASS_SIZE = (0.304, 0.766, 0.004)  # quer (X), längs C0-C180, Dicke
-# Leuchtende Fläche laut LDT (600 x 761 mm, ganze Leuchte) für die Leuchtdichte des Glases.
-LDT_LUMINOUS_AREA = 0.600 * 0.761
+# Leuchtende Fläche eines Moduls (LDT SIRIUS 2000: 600 x 761 mm für zwei Module) für die
+# Leuchtdichte des Glases.
+LDT_LUMINOUS_AREA = 0.300 * 0.761
 
 
 def import_luminaire(collection):
@@ -265,7 +270,7 @@ def import_luminaire(collection):
 def build_luminaire(collection):
     imported = import_luminaire(collection)
 
-    root = bpy.data.objects.new("Leuchte_SIRIUS_2000", None)
+    root = bpy.data.objects.new("Leuchte_SIRIUS_1000", None)
     root.empty_display_type = 'ARROWS'
     root.empty_display_size = 0.5
     collection.objects.link(root)
@@ -319,9 +324,9 @@ def ies_text():
 
 
 def build_light(collection, root, tilt):
-    light_data = bpy.data.lights.new("LVK_SIRIUS_2000", type='POINT')
+    light_data = bpy.data.lights.new("LVK_SIRIUS_1000", type='POINT')
     # Photometrisch korrekt: Leistung 1 W und Stärke 1 -> Werte der IES-Datei in cd
-    # (222.492 lm, max. 195.971 cd).
+    # (ein Modul: 111.246 lm, 985,5 W, max. 97.986 cd).
     light_data.energy = 1.0
     light_data.shadow_soft_size = 0.2
     light_data.use_nodes = True
@@ -338,7 +343,7 @@ def build_light(collection, root, tilt):
     bb.location = (-300, 0)
     nt.links.new(bb.outputs["Color"], emission.inputs["Color"])
 
-    light = bpy.data.objects.new("LVK_SIRIUS_2000", light_data)
+    light = bpy.data.objects.new("LVK_SIRIUS_1000", light_data)
     collection.objects.link(light)
     # 1 cm unter der Glasfläche.
     light.matrix_world = lvk_frame(tilt, -0.01)
@@ -464,7 +469,18 @@ def camera_only_material(name, color, strength=None):
     emit = nt.nodes.new("ShaderNodeEmission")
     emit.inputs["Color"].default_value = (*color, 1)
     emit.inputs["Strength"].default_value = strength or 2.0 ** (-EXPOSURE)
-    nt.links.new(path.outputs["Is Camera Ray"], mix.inputs[0])
+    # Nur die Vorderseite ist sichtbar, damit Beschriftungen nie spiegelverkehrt erscheinen
+    # (jede Beschriftung gibt es zweimal, je eine pro Blickrichtung).
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    front = nt.nodes.new("ShaderNodeMath")
+    front.operation = 'SUBTRACT'
+    front.inputs[0].default_value = 1.0
+    nt.links.new(geo.outputs["Backfacing"], front.inputs[1])
+    visible = nt.nodes.new("ShaderNodeMath")
+    visible.operation = 'MULTIPLY'
+    nt.links.new(path.outputs["Is Camera Ray"], visible.inputs[0])
+    nt.links.new(front.outputs[0], visible.inputs[1])
+    nt.links.new(visible.outputs[0], mix.inputs[0])
     nt.links.new(transp.outputs[0], mix.inputs[1])
     nt.links.new(emit.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], out.inputs["Surface"])
@@ -488,18 +504,31 @@ def scale_line(name, a, b, width, mat, collection):
 
 def label(body, location, mat, collection, size=0.22, rotation=(math.radians(90), 0, 0),
           align='CENTER'):
-    curve = bpy.data.curves.new("Text_" + body, 'FONT')
-    curve.body = body
-    curve.size = size
-    curve.align_x = align
-    curve.align_y = 'CENTER'
-    obj = bpy.data.objects.new("Text_" + body, curve)
-    obj.location = location
-    obj.rotation_euler = rotation
-    obj.data.materials.append(mat)
-    no_light_influence(obj)
-    collection.objects.link(obj)
-    return obj
+    """Beschriftung, von beiden Seiten lesbar: eine zweite, um 180° gedrehte Kopie zeigt in
+    die Gegenrichtung (die Rückseiten sind im Material ausgeblendet)."""
+    mirrored_align = {'LEFT': 'RIGHT', 'RIGHT': 'LEFT'}.get(align, align)
+    turn = Matrix.Rotation(math.pi, 3, 'Z')
+    rot = mathutils_euler_matrix(rotation)
+    first = None
+    for side, (al, m) in enumerate(((align, rot), (mirrored_align, turn @ rot))):
+        curve = bpy.data.curves.new("Text_" + body, 'FONT')
+        curve.body = body
+        curve.size = size
+        curve.align_x = al
+        curve.align_y = 'CENTER'
+        obj = bpy.data.objects.new("Text_" + body + ("_Rueckseite" if side else ""), curve)
+        obj.matrix_world = m.to_4x4()
+        obj.location = location
+        obj.data.materials.append(mat)
+        no_light_influence(obj)
+        collection.objects.link(obj)
+        first = first or obj
+    return first
+
+
+def mathutils_euler_matrix(rotation):
+    from mathutils import Euler
+    return Euler(rotation).to_matrix()
 
 
 def arrow_head(name, tip, direction, mat, collection, length=0.18, radius=0.06):
@@ -520,14 +549,16 @@ def arrow_head(name, tip, direction, mat, collection, length=0.18, radius=0.06):
     return obj
 
 
-def dimension(name, a, b, text, mat, collection, text_offset=(0, 0, 0.25), size=0.3):
+def dimension(name, a, b, text, mat, collection, text_offset=(0, 0, 0.25), size=0.3,
+              align='CENTER'):
     """Maßkette mit Pfeilen an beiden Enden und Beschriftung in der Mitte."""
     a, b = Vector(a), Vector(b)
     d = (b - a).normalized()
     scale_line(name, a + d * 0.15, b - d * 0.15, 0.025, mat, collection)
     arrow_head(name + "_Pfeil_a", a, -d, mat, collection)
     arrow_head(name + "_Pfeil_b", b, d, mat, collection)
-    return label(text, (a + b) / 2 + Vector(text_offset), mat, collection, size=size)
+    return label(text, (a + b) / 2 + Vector(text_offset), mat, collection, size=size,
+                 align=align)
 
 
 def build_scales(collection, eye):
@@ -591,10 +622,9 @@ def build_scales(collection, eye):
 
     # 4) Augenhöhe der Person
     xe = eye.x + 0.6
-    eye_label = dimension("Mass_Augenhoehe", (xe, eye.y, 0.0), (xe, eye.y, eye.z),
-                          f"Augenhöhe {eye.z:.2f} m".replace(".", ","), cyan, collection,
-                          text_offset=(0.15, 0, 0), size=0.16)
-    eye_label.data.align_x = 'LEFT'
+    dimension("Mass_Augenhoehe", (xe, eye.y, 0.0), (xe, eye.y, eye.z),
+              f"Augenhöhe {eye.z:.2f} m".replace(".", ","), cyan, collection,
+              text_offset=(0.15, 0, 0), size=0.16, align='LEFT')
 
     # 5) Sichtlinie Person -> Leuchte mit Abstand und Blickwinkel
     lum = Vector((0, 0, MOUNT_HEIGHT))
@@ -625,15 +655,26 @@ def build_cameras(collection, eye):
     cam.location = eye
     collection.objects.link(cam)
     # Blick nach vorn (+Y), 10° angehoben, damit Leuchte und beleuchteter Boden im Bild sind.
-    cam.rotation_euler = (math.radians(90 + 10), 0, 0)
+    # Anheben so weit, dass auch eine hoch montierte Leuchte im Bild ist (halber vertikaler
+    # Bildwinkel bei 18 mm und 16:9 etwa 29°).
+    elevation = math.degrees(math.atan2(MOUNT_HEIGHT - eye.z, PERSON_DISTANCE))
+    cam.rotation_euler = (math.radians(90 + max(10.0, elevation - 22.0)), 0, 0)
 
     over_data = bpy.data.cameras.new("Uebersicht")
-    over_data.lens = 16
+    over_data.lens = 16 if MOUNT_HEIGHT <= 5 else 13
     over = bpy.data.objects.new("Uebersicht", over_data)
     over.location = (ROOM_WIDTH / 2 - 0.4, -PERSON_DISTANCE - ROOM_BEHIND_PERSON + 0.4,
                      ROOM_HEIGHT - 0.4)
     collection.objects.link(over)
-    look_at(over, (0, 0, 1.5))
+    look_at(over, (0, 0.5, 0.3 * MOUNT_HEIGHT))
+
+    # Übersicht von vorn auf Leuchte, Person und Rückwand (Messfeld hinter der Person)
+    back_data = bpy.data.cameras.new("Uebersicht_Rueckwand")
+    back_data.lens = 16 if MOUNT_HEIGHT <= 5 else 13
+    back = bpy.data.objects.new("Uebersicht_Rueckwand", back_data)
+    back.location = (-ROOM_WIDTH / 2 + 0.4, ROOM_FRONT - 0.4, ROOM_HEIGHT - 0.4)
+    collection.objects.link(back)
+    look_at(back, (0, -PERSON_DISTANCE + 1.0, 0.3 * MOUNT_HEIGHT))
 
     bpy.context.scene.camera = cam
     return cam, over
@@ -675,7 +716,14 @@ def main():
     build_cameras(cam_col, eye)
     setup_render(scene)
 
-    out = os.path.join(DATA_DIR, "sirius2000_raum.blend")
+    # Geometrie für messfeld.py in der Szene ablegen
+    scene["mount_height"] = MOUNT_HEIGHT
+    scene["room_height"] = ROOM_HEIGHT
+    scene["room_width"] = ROOM_WIDTH
+    scene["room_front"] = ROOM_FRONT
+    scene["room_back"] = -PERSON_DISTANCE - ROOM_BEHIND_PERSON
+    scene["person_distance"] = PERSON_DISTANCE
+    out = os.path.join(DATA_DIR, f"sirius1000_raum_{MOUNT_HEIGHT:g}m.blend")
     bpy.ops.wm.save_as_mainfile(filepath=out, compress=True)
     print("Gespeichert:", out)
 

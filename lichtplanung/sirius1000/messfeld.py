@@ -1,9 +1,16 @@
 """
-Messfeld vor der Stirnwand (8 m vor der Leuchte): vertikale Beleuchtungsstärke in Lux,
-als Falschfarbenbild in der Szene plus Luxwerte im 1-m-Raster und Messbericht (PNG/CSV).
+Messfeld vor einer Wand: vertikale Beleuchtungsstärke in Lux, als Falschfarbenbild in der
+Szene plus Luxwerte im 1-m-Raster und Messbericht (PNG/CSV).
+
+Standard ist die Rückwand hinter der Person (2 m hinter ihr, 10 m hinter der Leuchte), also
+die Seite, die die außenliegende Blende abschirmt. Mit "stirnwand" als zweitem Argument
+wird stattdessen die Wand 8 m vor der Leuchte ausgewertet.
 
 Ausführen (nach build_scene.py):
-    blender --background sirius2000_raum.blend --python messfeld.py -- <ordner_mit_dateien>
+    blender --background sirius1000_raum_5m.blend --python messfeld.py -- <ordner> [rueckwand|stirnwand]
+
+Raumgeometrie und Montagehöhe werden aus der Szene gelesen (von build_scene.py abgelegt),
+Ergebnisdateien: messfeld_<wand>_<hoehe>m.png / .csv
 
 Verfahren:
   1. Cycles backt auf eine Messfläche 2 cm vor der Wand die direkte und die gesamte
@@ -14,7 +21,6 @@ Verfahren:
 """
 
 import csv
-import math
 import os
 import sys
 
@@ -25,20 +31,45 @@ from mathutils import Vector
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 DATA_DIR = argv[0] if argv else os.path.dirname(bpy.data.filepath)
 sys.path.insert(0, DATA_DIR)
-from ldt2ies import read_ldt  # noqa: E402
+from ldt2ies import read_ies  # noqa: E402
 
-LDT_PATH = os.path.join(DATA_DIR, "sirius2000.ldt")
+# Dieselbe IES-Datei wie das Licht in der Szene (absolute Werte in cd).
+IES_PATH = os.path.join(DATA_DIR, "sirius1000.ies")
 
-ROOM_FRONT = 8.0
-ROOM_WIDTH = 12.0
-ROOM_HEIGHT = 7.0
+_scene = bpy.context.scene
+MOUNT_HEIGHT = float(_scene.get("mount_height", 5.0))
+ROOM_FRONT = float(_scene.get("room_front", 8.0))
+ROOM_BACK = float(_scene.get("room_back", -10.0))  # y der Rückwand
+PERSON_DISTANCE = float(_scene.get("person_distance", 8.0))
+ROOM_WIDTH = float(_scene.get("room_width", 12.0))
+ROOM_HEIGHT = float(_scene.get("room_height", 7.0))
+
+WALL = argv[1] if len(argv) > 1 else "rueckwand"
+if WALL == "stirnwand":
+    WALL_Y = ROOM_FRONT
+    WALL_NORMAL = Vector((0, -1, 0))  # zeigt in den Raum, zur Leuchte
+    WALL_TITLE = f"Stirnwand ({ROOM_FRONT:g} m vor der Leuchte)"
+    WALL_NAME = "Stirnwand"
+else:
+    WALL = "rueckwand"
+    WALL_Y = ROOM_BACK
+    WALL_NORMAL = Vector((0, 1, 0))
+    WALL_TITLE = (f"Rückwand hinter der Person ({-ROOM_BACK:g} m hinter der Leuchte, "
+                  f"{-ROOM_BACK - PERSON_DISTANCE:g} m hinter der Person)")
+    WALL_NAME = "Rückwand"
+UP = Vector((0, 0, 1))
+# "rechts" für einen Betrachter, der auf die Wand blickt
+WALL_RIGHT = (-WALL_NORMAL).cross(UP)
+SUFFIX = f"_{WALL}_{MOUNT_HEIGHT:g}m"
 FIELD_OFFSET = 0.02       # Abstand Messfläche - Wand [m]
 TEXEL = 0.05              # Auflösung der Messfläche [m]
 GRID = 1.0                # Raster der angezeigten Luxwerte [m]
 BAKE_SAMPLES = 1024
 
-# Klassengrenzen der Falschfarbendarstellung [lx]
+# Klassengrenzen der Falschfarbendarstellung [lx]; werden nach der Rechnung an Emax angepasst.
 LEVELS = [0, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 600]
+NICE_LEVELS = [0.1, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 5, 7.5, 10, 15, 20, 30, 50, 75, 100,
+               150, 200, 300, 400, 500, 600, 800, 1000, 1500, 2000]
 # Farbverlauf (blau -> cyan -> grün -> gelb -> rot -> magenta), wird auf die Klassen verteilt.
 STOPS = [(0.00, (0.10, 0.00, 0.35)), (0.15, (0.00, 0.20, 0.90)), (0.35, (0.00, 0.80, 0.90)),
          (0.50, (0.10, 0.80, 0.20)), (0.65, (0.95, 0.95, 0.10)), (0.82, (1.00, 0.45, 0.00)),
@@ -56,6 +87,29 @@ def ramp(t):
 CLASS_COLORS = [ramp(i / (len(LEVELS) - 1)) for i in range(len(LEVELS))]
 
 
+def set_levels(e_max):
+    """Bis zu 13 Klassen von 0 bis knapp über Emax aus einer 1-2-3-5-Reihe."""
+    global LEVELS, CLASS_COLORS
+    upper = [v for v in NICE_LEVELS if v <= e_max * 1.05]
+    LEVELS = [0] + upper[-12:]
+    CLASS_COLORS = [ramp(i / (len(LEVELS) - 1)) for i in range(len(LEVELS))]
+
+
+def fmt_lx(v):
+    return f"{v:.1f}" if v < 10 else f"{v:.0f}"
+
+
+def wall_matrix():
+    """Rotation: lokal X -> rechts, lokal Y -> oben, lokal Z -> Wandnormale (in den Raum)."""
+    from mathutils import Matrix
+    return Matrix((WALL_RIGHT, UP, WALL_NORMAL)).transposed()
+
+
+def wall_point(u, z, offset):
+    """Punkt auf der Messfläche: u nach rechts (Blick auf die Wand), z Höhe über Boden."""
+    return (Vector((0, WALL_Y, 0)) + WALL_RIGHT * u + UP * z + WALL_NORMAL * offset)
+
+
 def classify(e):
     idx = np.searchsorted(np.array(LEVELS[1:]), e, side='right')
     return np.clip(idx, 0, len(LEVELS) - 1)
@@ -67,17 +121,12 @@ def srgb_to_linear(c):
 
 
 # ---------------------------------------------------------------------------
-# Direkte Beleuchtungsstärke aus der LDT
+# Direkte Beleuchtungsstärke aus der LVK (IES)
 # ---------------------------------------------------------------------------
 
 def ldt_intensity_table():
-    d = read_ldt(LDT_PATH)
-    flux = sum(s["flux"] * s["n"] for s in d["sets"])
-    table = np.array([d["full"][ci] for ci in range(d["mc"])] + [d["full"][0]])
-    table *= flux / 1000.0 * d["cfac"]  # cd
-    c = np.array(d["c"] + [360.0])
-    g = np.array(d["gamma"])
-    return c, g, table
+    c, g, table, _flux, _name = read_ies(IES_PATH)
+    return np.array(c), np.array(g), np.array(table)  # table in cd, [C, gamma]
 
 
 def direct_illuminance(points, normal, light_pos, c_axis, c90_axis, nadir):
@@ -128,7 +177,7 @@ def remove_old():
             bpy.data.images.remove(bpy.data.images[name])
 
 
-def make_plane(name, width, height, location, rotation, collection):
+def make_plane(name, width, height, location, rotation, collection, matrix=None):
     mesh = bpy.data.meshes.new(name)
     hw, hh = width / 2, height / 2
     mesh.from_pydata([(-hw, -hh, 0), (hw, -hh, 0), (hw, hh, 0), (-hw, hh, 0)], [],
@@ -137,8 +186,11 @@ def make_plane(name, width, height, location, rotation, collection):
     for loop, co in zip(uv.data, [(0, 0), (1, 0), (1, 1), (0, 1)]):
         loop.uv = co
     obj = bpy.data.objects.new(name, mesh)
-    obj.location = location
-    obj.rotation_euler = rotation
+    if matrix is not None:
+        obj.matrix_world = matrix
+    else:
+        obj.location = location
+        obj.rotation_euler = rotation
     collection.objects.link(obj)
     return obj
 
@@ -170,15 +222,18 @@ def camera_only_material(name, image=None, color=(0, 0, 0), strength=1.0):
     return mat
 
 
-def add_text(body, location, rotation, size, mat, collection, align='CENTER'):
+def add_text(body, location, rotation, size, mat, collection, align='CENTER', matrix=None):
     curve = bpy.data.curves.new("Lux_" + body, 'FONT')
     curve.body = body
     curve.size = size
     curve.align_x = align
     curve.align_y = 'CENTER'
     obj = bpy.data.objects.new("Lux_" + body, curve)
+    if matrix is not None:
+        obj.matrix_world = matrix
     obj.location = location
-    obj.rotation_euler = rotation
+    if matrix is None:
+        obj.rotation_euler = rotation
     obj.data.materials.append(mat)
     obj.visible_shadow = False
     collection.objects.link(obj)
@@ -211,10 +266,11 @@ def main():
     scene.collection.children.link(col)
 
     nx, nz = int(round(ROOM_WIDTH / TEXEL)), int(round(ROOM_HEIGHT / TEXEL))
-    y_field = ROOM_FRONT - FIELD_OFFSET
-    # Normale der Messfläche zeigt zur Leuchte (-Y). Rx(90°): lokal +Z -> -Y, lokal +Y -> +Z.
-    field = make_plane("Messfeld_Stirnwand", ROOM_WIDTH, ROOM_HEIGHT,
-                       (0, y_field, ROOM_HEIGHT / 2), (math.radians(90), 0, 0), col)
+    rot = wall_matrix().to_4x4()
+    field_matrix = rot.copy()
+    field_matrix.translation = wall_point(0, ROOM_HEIGHT / 2, FIELD_OFFSET)
+    field = make_plane(f"Messfeld_{WALL_NAME}", ROOM_WIDTH, ROOM_HEIGHT, None, None, col,
+                       matrix=field_matrix)
     field.visible_shadow = False
 
     # --- Backen ---------------------------------------------------------------
@@ -236,22 +292,26 @@ def main():
     scene.cycles.samples = samples_before
 
     # --- Direkte Beleuchtungsstärke aus der LDT --------------------------------
-    light = bpy.data.objects["LVK_SIRIUS_2000"]
+    light = bpy.data.objects["LVK_SIRIUS_1000"]
     mw = light.matrix_world
-    rot = mw.to_3x3().normalized()
+    lrot = mw.to_3x3().normalized()
     light_pos = np.array(mw.translation)
-    nadir = np.array(rot @ Vector((0, 0, -1)))
-    c_axis = np.array(rot @ Vector((0, -1, 0)))    # Cycles-IES: C0 = lokal -Y
-    c90_axis = np.array(rot @ Vector((-1, 0, 0)))  # C90 = lokal -X
-    xs = -ROOM_WIDTH / 2 + (np.arange(nx) + 0.5) * TEXEL
+    nadir = np.array(lrot @ Vector((0, 0, -1)))
+    c_axis = np.array(lrot @ Vector((0, -1, 0)))    # Cycles-IES: C0 = lokal -Y
+    c90_axis = np.array(lrot @ Vector((-1, 0, 0)))  # C90 = lokal -X
+    us = -ROOM_WIDTH / 2 + (np.arange(nx) + 0.5) * TEXEL
     zs = (np.arange(nz) + 0.5) * TEXEL
-    gx, gz = np.meshgrid(xs, zs)
-    pts = np.stack([gx.ravel(), np.full(gx.size, y_field), gz.ravel()], axis=1)
-    normal = np.array((0.0, -1.0, 0.0))  # Flächennormale der Messfläche, zur Leuchte hin
+    gu, gz = np.meshgrid(us, zs)
+    origin = np.array(wall_point(0, 0, FIELD_OFFSET))
+    pts = (origin + gu.ravel()[:, None] * np.array(WALL_RIGHT) +
+           gz.ravel()[:, None] * np.array(UP))
+    normal = np.array(WALL_NORMAL)  # Flächennormale der Messfläche, in den Raum
     e_direct = direct_illuminance(pts, normal, light_pos, c_axis, c90_axis, nadir)
     e_direct = e_direct.reshape(nz, nx)
 
     # Umrechnungsfaktor Cycles -> Lux aus Bereichen mit deutlichem Direktlicht.
+    # (Die Person wirft dabei in Cycles einen Schatten, die LDT-Rechnung nicht; der Median
+    # über die hellen Bereiche ist dagegen robust.)
     mask = (e_direct > 0.3 * e_direct.max()) & (direct_raw > 0)
     factor = float(np.median(e_direct[mask] / direct_raw[mask]))
     e_cycles_direct = direct_raw * factor
@@ -267,6 +327,7 @@ def main():
           f"mittel {e_indirect.mean():.1f} lx")
 
     # --- Falschfarbenbild in der Szene ----------------------------------------
+    set_levels(float(e_total.max()))
     cls = classify(e_total)
     rgb = np.array(CLASS_COLORS)[cls]
     # Klassengrenzen als feine dunkle Isolinien
@@ -298,27 +359,30 @@ def main():
             # Wert im Rasterpunkt (Mittel der 2x2 Texel um den Zellmittelpunkt)
             cj, ci = j * per + per // 2, i * per + per // 2
             grid_vals[j, i] = e_total[cj - 1:cj + 1, ci - 1:ci + 1].mean()
-            x = -ROOM_WIDTH / 2 + (i + 0.5) * GRID
+            u = -ROOM_WIDTH / 2 + (i + 0.5) * GRID
             z = (j + 0.5) * GRID
             # helle Schrift auf den dunklen Klassen, sonst schwarz
             tm = text_mat_light if classify(grid_vals[j, i]) <= 3 else text_mat
-            add_text(f"{grid_vals[j, i]:.0f}", (x, y_field - 0.01, z),
-                     (math.radians(90), 0, 0), 0.22, tm, col)
-            add_text("+", (x, y_field - 0.01, z - 0.17), (math.radians(90), 0, 0), 0.1,
-                     tm, col)
+            add_text(fmt_lx(grid_vals[j, i]), wall_point(u, z, FIELD_OFFSET + 0.01), None, 0.22,
+                     tm, col, matrix=rot)
+            add_text("+", wall_point(u, z - 0.17, FIELD_OFFSET + 0.01), None, 0.1, tm, col,
+                     matrix=rot)
 
-    # Achsbeschriftung des Messfelds: Höhe links, Position x oben
+    # Achsbeschriftung des Messfelds: Höhe links, Welt-x oben (0 = Achse der Leuchte)
     for z in range(1, int(ROOM_HEIGHT)):
-        tm = text_mat_light if e_total[int(z / TEXEL), 0] < LEVELS[4] else text_mat
-        add_text(f"— {z} m", (-ROOM_WIDTH / 2 + 0.05, y_field - 0.01, z),
-                 (math.radians(90), 0, 0), 0.16, tm, col, align='LEFT')
-    for x in range(-int(ROOM_WIDTH / 2) + 1, int(ROOM_WIDTH / 2)):
-        tm = text_mat_light if e_total[-1, int((x + ROOM_WIDTH / 2) / TEXEL)] < LEVELS[4] \
+        tm = text_mat_light if classify(e_total[int(z / TEXEL), 0]) <= 3 else text_mat
+        add_text(f"— {z} m", wall_point(-ROOM_WIDTH / 2 + 0.05, z, FIELD_OFFSET + 0.01), None,
+                 0.16, tm, col, align='LEFT', matrix=rot)
+    for k in range(-int(ROOM_WIDTH / 2) + 1, int(ROOM_WIDTH / 2)):
+        u = float(k)
+        x_world = round(u * WALL_RIGHT.x)
+        tm = text_mat_light if classify(e_total[-1, int((u + ROOM_WIDTH / 2) / TEXEL)]) <= 3 \
             else text_mat
-        add_text(f"{x:+d} m" if x else "0 m", (x, y_field - 0.01, ROOM_HEIGHT - 0.15),
-                 (math.radians(90), 0, 0), 0.16, tm, col)
+        add_text(f"x {x_world:+d} m" if x_world else "x 0 m",
+                 wall_point(u, ROOM_HEIGHT - 0.15, FIELD_OFFSET + 0.01), None, 0.16, tm, col,
+                 matrix=rot)
 
-    # --- Legende an der rechten Seitenwand, nahe der Stirnwand -------------------
+    # --- Legende an der rechten Seitenwand (Blick auf die Messwand), 1 m vor ihr ---
     leg_h = 4.8
     leg_n = len(LEVELS)
     leg_img = bpy.data.images.new("Messfeld_Legende", 1, leg_n, alpha=True)
@@ -326,20 +390,27 @@ def main():
                              np.ones((leg_n, 1))], axis=1)
     leg_img.pixels.foreach_set(leg_px.astype(np.float32).ravel())
     leg_img.pack()
-    xw = ROOM_WIDTH / 2 - 0.02
-    leg = make_plane("Messfeld_Legende", 0.35, leg_h, (xw, ROOM_FRONT - 1.0, 1.0 + leg_h / 2),
-                     (math.radians(90), 0, math.radians(90)), col)
+    from mathutils import Matrix
+    # Seitenwand rechts: Normale -WALL_RIGHT; "rechts" für den Blick auf diese Seitenwand.
+    side_n = -WALL_RIGHT
+    side_r = (-side_n).cross(UP)
+    side_rot = Matrix((side_r, UP, side_n)).transposed().to_4x4()
+    base = (WALL_RIGHT * (ROOM_WIDTH / 2 - 0.02) + Vector((0, WALL_Y, 0)) +
+            WALL_NORMAL * 1.0)
+    leg_m = side_rot.copy()
+    leg_m.translation = base + UP * (1.0 + leg_h / 2)
+    leg = make_plane("Messfeld_Legende", 0.35, leg_h, None, None, col, matrix=leg_m)
     leg.data.materials.append(camera_only_material("Messfeld_Legende", leg_img,
                                                    strength=strength))
     leg.visible_shadow = False
     white = camera_only_material("Messfeld_Text_hell", color=(1, 1, 1), strength=strength)
     for k, lv in enumerate(LEVELS):
         z = 1.0 + (k + 0.5) * leg_h / leg_n
-        label = f"≥ {lv} lx" if k else f"< {LEVELS[1]} lx"
-        add_text(label, (xw - 0.01, ROOM_FRONT - 1.25, z), (math.radians(90), 0,
-                 math.radians(90)), 0.16, white, col, align='RIGHT')
-    add_text("Ev Stirnwand [lx]", (xw - 0.01, ROOM_FRONT - 1.0, 1.0 + leg_h + 0.3),
-             (math.radians(90), 0, math.radians(90)), 0.2, white, col)
+        label = f"≥ {lv:g} lx" if k else f"< {LEVELS[1]:g} lx"
+        add_text(label, base + side_n * 0.01 - side_r * 0.25 + UP * z, None, 0.16, white, col,
+                 align='RIGHT', matrix=side_rot)
+    add_text(f"Ev {WALL_NAME} [lx]", base + side_n * 0.01 + UP * (1.0 + leg_h + 0.3), None,
+             0.2, white, col, matrix=side_rot)
 
     # Kamera frontal auf das Messfeld
     cam = bpy.data.objects.get("Messfeld_Kamera")
@@ -347,19 +418,21 @@ def main():
         cam = bpy.data.objects.new("Messfeld_Kamera", bpy.data.cameras.new("Messfeld_Kamera"))
         col.objects.link(cam)
     cam.data.type = 'ORTHO'
-    cam.data.ortho_scale = ROOM_WIDTH + 0.4
-    cam.location = (0, 0.5, ROOM_HEIGHT / 2)
-    cam.rotation_euler = (math.radians(90), 0, 0)
+    cam.data.ortho_scale = max(ROOM_WIDTH, ROOM_HEIGHT * 16 / 9) + 0.4
+    cam_m = rot.copy()  # Kamera blickt entlang -lokal Z, also auf die Wand
+    cam_m.translation = wall_point(0, ROOM_HEIGHT / 2, 0.6)
+    cam.matrix_world = cam_m
 
     # --- Messbericht ----------------------------------------------------------
     stats = dict(Emin=e_total.min(), Emax=e_total.max(), Emittel=e_total.mean(),
                  Edirekt_mittel=e_direct.mean(), Eindirekt_mittel=e_indirect.mean())
     stats["U0"] = stats["Emin"] / stats["Emittel"] if stats["Emittel"] > 0 else 0
-    print("Messfeld Stirnwand: " + ", ".join(f"{k} {v:.2f}" for k, v in stats.items()))
-    with open(os.path.join(DATA_DIR, "messfeld_stirnwand.csv"), "w", newline="") as f:
+    print(f"Messfeld {WALL_NAME}: " + ", ".join(f"{k} {v:.2f}" for k, v in stats.items()))
+    with open(os.path.join(DATA_DIR, f"messfeld{SUFFIX}.csv"), "w", newline="") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["Hoehe z [m] / Position x [m]"] +
-                   [f"{-ROOM_WIDTH / 2 + (i + 0.5) * GRID:.1f}" for i in range(gxn)])
+        w.writerow([f"{WALL_NAME}: Hoehe z [m] / Position x [m] (Blick auf die Wand)"] +
+                   [f"{(-ROOM_WIDTH / 2 + (i + 0.5) * GRID) * WALL_RIGHT.x:.1f}"
+                    for i in range(gxn)])
         for j in reversed(range(gzn)):
             w.writerow([f"{(j + 0.5) * GRID:.1f}"] + [f"{v:.1f}" for v in grid_vals[j]])
     try:
@@ -369,6 +442,10 @@ def main():
 
     bpy.ops.wm.save_mainfile(compress=True)
     print("Gespeichert:", bpy.data.filepath)
+
+
+def ies_flux():
+    return read_ies(IES_PATH)[3]
 
 
 def room_reflectance():
@@ -388,7 +465,7 @@ def write_report(e_total, grid_vals, stats):
     cmap = ListedColormap(CLASS_COLORS)
     bounds = LEVELS + [LEVELS[-1] * 2]
     norm = BoundaryNorm(bounds, cmap.N)
-    fig, ax = plt.subplots(figsize=(13, 8.2), dpi=130)
+    fig, ax = plt.subplots(figsize=(13, 3.2 + 0.72 * ROOM_HEIGHT), dpi=130)
     ext = (-ROOM_WIDTH / 2, ROOM_WIDTH / 2, 0, ROOM_HEIGHT)
     im = ax.imshow(e_total, origin="lower", extent=ext, cmap=cmap, norm=norm,
                    interpolation="nearest")
@@ -400,27 +477,33 @@ def write_report(e_total, grid_vals, stats):
         for i in range(gxn):
             x, z = -ROOM_WIDTH / 2 + (i + 0.5) * GRID, (j + 0.5) * GRID
             ax.plot(x, z, "k+", ms=5, mew=0.8)
-            ax.text(x, z + 0.18, f"{grid_vals[j, i]:.0f}", ha="center", va="bottom",
+            ax.text(x, z + 0.18, fmt_lx(grid_vals[j, i]), ha="center", va="bottom",
                     fontsize=9, weight="bold")
-    ax.axhline(5.0, color="w", ls="--", lw=0.8)
-    ax.text(ROOM_WIDTH / 2 - 0.1, 5.05, "Montagehöhe Leuchte 5 m", color="w", ha="right",
-            va="bottom", fontsize=8)
-    ax.set_xlabel("Position x an der Stirnwand [m] (0 = Achse der Leuchte)")
+    ax.axhline(MOUNT_HEIGHT, color="w", ls="--", lw=0.8)
+    ax.text(ROOM_WIDTH / 2 - 0.1, MOUNT_HEIGHT + 0.05, f"Montagehöhe Leuchte {MOUNT_HEIGHT:g} m",
+            color="w", ha="right", va="bottom", fontsize=8)
+    ticks = list(range(-int(ROOM_WIDTH / 2), int(ROOM_WIDTH / 2) + 1, 2))
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{round(t * WALL_RIGHT.x):g}" for t in ticks])
+    ax.set_xlabel(f"Position x [m], Blick auf die {WALL_NAME} (0 = Achse der Leuchte)")
     ax.set_ylabel("Höhe z [m]")
-    ax.set_title("Vertikale Beleuchtungsstärke Ev auf der Stirnwand (8 m vor der Leuchte)\n"
-                 "Siteco SIRIUS 2000, 5XA7100W40A13DA-Z mit außenliegender Blende V2, "
-                 f"222.492 lm, Montagehöhe 5 m, Reflexionsgrad Raum {room_reflectance():.0%}",
+    ax.set_title(f"Vertikale Beleuchtungsstärke Ev auf der {WALL_TITLE}\n"
+                 "Siteco SIRIUS 1000 (1 Modul), LVK 5XA7100W40A13DA-Z mit außenliegender "
+                 "Blende V2\n" + f"{ies_flux():,.0f}".replace(",", ".") +
+                 f" lm, Montagehöhe {MOUNT_HEIGHT:g} m, "
+                 f"Reflexionsgrad Raum {room_reflectance():.0%}",
                  fontsize=11)
-    cb = fig.colorbar(im, ax=ax, ticks=LEVELS, fraction=0.03, pad=0.02)
+    cb = fig.colorbar(im, ax=ax, ticks=LEVELS, fraction=0.03, pad=0.02, format="%g")
     cb.set_label("Ev [lx]")
-    txt = (f"Emin = {stats['Emin']:.1f} lx   Emittel = {stats['Emittel']:.1f} lx   "
-           f"Emax = {stats['Emax']:.1f} lx   U0 = Emin/Emittel = {stats['U0']:.2f}\n"
-           f"davon direkt (aus LDT) im Mittel {stats['Edirekt_mittel']:.1f} lx, "
-           f"indirekt (Interreflexion, Cycles) im Mittel {stats['Eindirekt_mittel']:.1f} lx. "
-           f"Werte im 1-m-Raster, Messfläche 2 cm vor der Wand")
+    txt = (f"Emin = {stats['Emin']:.2f} lx   Emittel = {stats['Emittel']:.2f} lx   "
+           f"Emax = {stats['Emax']:.2f} lx   U0 = Emin/Emittel = {stats['U0']:.2f}\n"
+           f"davon direkt (aus LDT) im Mittel {stats['Edirekt_mittel']:.2f} lx, "
+           f"indirekt (Interreflexion, Cycles) im Mittel {stats['Eindirekt_mittel']:.2f} lx. "
+           f"Werte im 1-m-Raster, Messfläche 2 cm vor der Wand; Person nicht als Hindernis "
+           f"berücksichtigt")
     fig.text(0.07, 0.015, txt, fontsize=9)
     fig.subplots_adjust(bottom=0.14)
-    fig.savefig(os.path.join(DATA_DIR, "messfeld_stirnwand.png"))
+    fig.savefig(os.path.join(DATA_DIR, f"messfeld{SUFFIX}.png"))
     plt.close(fig)
 
 
