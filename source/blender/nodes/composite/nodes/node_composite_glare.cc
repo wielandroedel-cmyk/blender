@@ -14,6 +14,7 @@
 #  include <fftw3.h>
 #endif
 
+#include "BLI_array.hh"
 #include "BLI_fftw.hh"
 #include "BLI_index_range.hh"
 #include "BLI_math_angle_types.hh"
@@ -54,6 +55,12 @@ static const EnumPropertyItem type_items[] = {
     {CMP_NODE_GLARE_SIMPLE_STAR, "SIMPLE_STAR", 0, N_("Simple Star"), ""},
     {CMP_NODE_GLARE_SUN_BEAMS, "SUN_BEAMS", 0, N_("Sun Beams"), ""},
     {CMP_NODE_GLARE_KERNEL, "KERNEL", 0, N_("Kernel"), ""},
+    {CMP_NODE_GLARE_DIFFRACTION,
+     "DIFFRACTION",
+     0,
+     N_("Diffraction"),
+     N_("Diffraction spikes produced by the blades of the camera aperture, as seen around bright "
+        "stars")},
     {0, nullptr, 0, nullptr, nullptr},
 };
 
@@ -164,7 +171,10 @@ static void node_declare(NodeDeclarationBuilder &b)
       .max(1.0f)
       .subtype(PROP_FACTOR)
       .usage_by_menu("Type"_ustr,
-                     {CMP_NODE_GLARE_FOG_GLOW, CMP_NODE_GLARE_BLOOM, CMP_NODE_GLARE_SUN_BEAMS})
+                     {CMP_NODE_GLARE_FOG_GLOW,
+                      CMP_NODE_GLARE_BLOOM,
+                      CMP_NODE_GLARE_SUN_BEAMS,
+                      CMP_NODE_GLARE_DIFFRACTION})
       .description(
           "The size of the glare relative to the image. 1 means the glare covers the entire "
           "image, 0.5 means the glare covers half the image, and so on");
@@ -200,8 +210,11 @@ static void node_declare(NodeDeclarationBuilder &b)
       .min(0.0f)
       .max(1.0f)
       .subtype(PROP_FACTOR)
-      .usage_by_menu("Type"_ustr, {CMP_NODE_GLARE_GHOST, CMP_NODE_GLARE_STREAKS})
-      .description("Modulates colors of streaks and ghosts for a spectral dispersion effect");
+      .usage_by_menu("Type"_ustr,
+                     {CMP_NODE_GLARE_GHOST, CMP_NODE_GLARE_STREAKS, CMP_NODE_GLARE_DIFFRACTION})
+      .description(
+          "Modulates colors of streaks, ghosts, and diffraction spikes for a spectral dispersion "
+          "effect");
   glare_panel.add_input<decl::Bool>("Diagonal"_ustr, "Diagonal Star"_ustr)
       .default_value(true)
       .usage_by_menu("Type"_ustr, CMP_NODE_GLARE_SIMPLE_STAR)
@@ -225,6 +238,19 @@ static void node_declare(NodeDeclarationBuilder &b)
       .description(
           "The amount of jitter to introduce while computing rays, higher jitter can be faster "
           "but can produce grainy or noisy results");
+  glare_panel.add_input<decl::Int>("Blades"_ustr, "Aperture Blades"_ustr)
+      .default_value(6)
+      .min(3)
+      .max(16)
+      .usage_by_menu("Type"_ustr, CMP_NODE_GLARE_DIFFRACTION)
+      .description(
+          "The number of blades of the aperture. An even number of blades produces as many "
+          "spikes, while an odd number of blades produces twice as many spikes");
+  glare_panel.add_input<decl::Float>("Rotation"_ustr, "Aperture Rotation"_ustr)
+      .default_value(0.0f)
+      .subtype(PROP_ANGLE)
+      .usage_by_menu("Type"_ustr, CMP_NODE_GLARE_DIFFRACTION)
+      .description("The rotation of the aperture blades");
   glare_panel.add_input<decl::Menu>("Kernel Data Type"_ustr)
       .default_value(KernelDataType::Float)
       .static_items(kernel_data_type_items)
@@ -298,6 +324,7 @@ static void gather_link_searches(GatherLinkSearchOpParams &params)
   params.add_item(IFACE_("Bloom"), SocketSearchOp{CMP_NODE_GLARE_BLOOM});
   params.add_item(IFACE_("Sun Beams"), SocketSearchOp{CMP_NODE_GLARE_SUN_BEAMS});
   params.add_item(IFACE_("Kernel"), SocketSearchOp{CMP_NODE_GLARE_KERNEL});
+  params.add_item(IFACE_("Diffraction"), SocketSearchOp{CMP_NODE_GLARE_DIFFRACTION});
 }
 
 using namespace blender::compositor;
@@ -649,6 +676,8 @@ class GlareOperation : public NodeOperation {
         return this->execute_sun_beams(highlights_result);
       case CMP_NODE_GLARE_KERNEL:
         return this->execute_kernel(highlights_result);
+      case CMP_NODE_GLARE_DIFFRACTION:
+        return this->execute_diffraction(highlights_result);
     }
 
     return this->execute_simple_star(highlights_result);
@@ -1435,7 +1464,7 @@ class GlareOperation : public NodeOperation {
     GPU_shader_uniform_4fv_array(shader,
                                  "color_modulators",
                                  color_modulators.size(),
-                                 (const float (*)[4])color_modulators.data());
+                                 (const float(*)[4])color_modulators.data());
 
     /* Zero initialize output image where ghosts will be accumulated. */
     const float4 zero_color = float4(0.0f);
@@ -2555,6 +2584,106 @@ class GlareOperation : public NodeOperation {
         this->get_input("Kernel Data Type").get_single_value_default<MenuValue>().value);
   }
 
+  /* ------------------
+   * Diffraction Glare.
+   * ------------------ */
+
+  /* Diffraction glare simulates the spikes that appear around bright light sources like stars due
+   * to diffraction at the straight edges of a polygonal aperture. Each straight edge diffracts
+   * light into a thin line perpendicular to it that passes through the light source, so the glare
+   * is computed by convolving the highlights with a kernel made of such lines. Opposite edges of
+   * an aperture with an even number of blades are parallel and produce coincident lines, which is
+   * why such apertures produce as many spikes as blades, while apertures with an odd number of
+   * blades produce twice as many spikes. */
+  Result execute_diffraction(const Result &highlights)
+  {
+    Result kernel = this->compute_diffraction_kernel(highlights);
+    Result diffraction_result = this->context().create_result(ResultType::Color);
+    convolve(this->context(), highlights, kernel, diffraction_result, true);
+    kernel.release();
+    return diffraction_result;
+  }
+
+  /* Computes a color diffraction kernel whose radius is half the largest dimension of the
+   * highlights scaled by the glare size, such that a size of 1 lets the spikes of a light source
+   * at the center of the image reach its boundary. The kernel is computed on the CPU and is
+   * uploaded to the GPU if needed, since the convolution is done on the CPU anyways. */
+  Result compute_diffraction_kernel(const Result &highlights)
+  {
+    const int radius = math::max(
+        1, int(this->get_size() * math::reduce_max(highlights.domain().data_size) / 2.0f));
+    const int2 size = int2(radius * 2 + 1);
+
+    Result kernel = this->context().create_result(ResultType::Color);
+    kernel.allocate_texture(Domain(size), false, ResultStorageType::CPUImage);
+
+    const int blades = this->get_aperture_blades();
+    const float rotation = this->get_aperture_rotation();
+
+    /* Each blade edge produces a line along its normal, so compute the directions of those
+     * lines. Lines of parallel edges are coincident, which is handled implicitly. */
+    Array<float2> line_directions(blades);
+    for (const int i : line_directions.index_range()) {
+      const float angle = rotation + ((float(i) + 0.5f) / blades) * (M_PI * 2.0f);
+      line_directions[i] = float2(math::cos(angle), math::sin(angle));
+    }
+
+    /* The diffraction pattern scales linearly with the wavelength, so longer wavelengths spread
+     * further, giving the spikes a spectral dispersion that is controlled by the color
+     * modulation. The scales are relative to green, using the approximate wavelengths of red,
+     * green, and blue light. */
+    const float color_modulation = this->get_color_modulation();
+    const float3 wavelength_scales = math::interpolate(
+        float3(1.0f), float3(650.0f, 550.0f, 450.0f) / 550.0f, color_modulation);
+
+    /* The intensity of edge diffraction falls off with the inverse square of the distance, using
+     * a falloff radius to avoid the singularity at the center. The spikes are also smoothly faded
+     * out towards the boundary of the kernel to avoid a hard cut. */
+    const float falloff_radius = math::max(1.0f, radius * 0.05f);
+    const float spike_width = 0.75f;
+
+    parallel_for(size, [&](const int2 texel) {
+      const float2 offset = float2(texel - int2(radius));
+      const float distance = math::length(offset);
+
+      if (distance == 0.0f || distance > float(radius)) {
+        kernel.store_pixel(texel, Color(0.0f, 0.0f, 0.0f, 0.0f));
+        return;
+      }
+
+      float line_intensity = 0.0f;
+      for (const float2 &direction : line_directions) {
+        const float perpendicular_distance = math::abs(offset.x * direction.y -
+                                                       offset.y * direction.x);
+        line_intensity += math::exp(-math::square(perpendicular_distance / spike_width) / 2.0f);
+      }
+
+      const float fade = math::square(1.0f - distance / float(radius));
+      const float3 falloff = 1.0f / (1.0f + math::square(distance /
+                                                         (falloff_radius * wavelength_scales)));
+      const float3 value = line_intensity * fade * falloff;
+      kernel.store_pixel(texel, Color(float4(value, value.y)));
+    });
+
+    if (this->context().use_gpu()) {
+      Result gpu_kernel = kernel.upload_to_gpu(true);
+      kernel.release();
+      return gpu_kernel;
+    }
+
+    return kernel;
+  }
+
+  int get_aperture_blades()
+  {
+    return math::clamp(this->get_input("Aperture Blades").get_single_value_default<int>(), 3, 16);
+  }
+
+  float get_aperture_rotation()
+  {
+    return this->get_input("Aperture Rotation").get_single_value_default<float>();
+  }
+
   /* ----------
    * Glare Mix.
    * ---------- */
@@ -2725,6 +2854,7 @@ class GlareOperation : public NodeOperation {
       case CMP_NODE_GLARE_GHOST:
       case CMP_NODE_GLARE_SUN_BEAMS:
       case CMP_NODE_GLARE_KERNEL:
+      case CMP_NODE_GLARE_DIFFRACTION:
         return 1.0f;
     }
 
