@@ -1,0 +1,22 @@
+Arena: 3 x SIRIUS 1000 bei x = [-6.0, 0.0, 6.0] m, Wartungsfaktor 0.8, Feld 18 x 8 m vor der Reihe, GR mit Boden-Reflexionsgrad 20%
+
+Blende heute (Lochung 3,4 %), Montagehöhe 5 m:
+  Feld E_h: Mittel 1166 lx, Min 187 lx, Max 2332 lx, U0 0.16 -> keine Klasse (E_h reicht für Klasse I (Wettkampf national/international), U0 zu gering)
+  durchgehende Reihe (alle 6 m), Streifen 8 m tief: Mittel 1349 lx, Min 322 lx, U0 0.24 -> keine Klasse
+  Zuschauer-GR: min 0.0, max 19.2, Mittel 11.5; an x=0/y=-8: GR 14.6, E_v 76 lx, Anteile L_vl 0.07, 0.58, 0.07
+
+Blende heute (Lochung 3,4 %), Montagehöhe 8 m:
+  Feld E_h: Mittel 832 lx, Min 380 lx, Max 1383 lx, U0 0.46 -> keine Klasse (E_h reicht für Klasse I (Wettkampf national/international), U0 zu gering)
+  durchgehende Reihe (alle 6 m), Streifen 8 m tief: Mittel 1080 lx, Min 755 lx, U0 0.70 -> Klasse I
+  Zuschauer-GR: min 0.0, max 13.5, Mittel 8.5; an x=0/y=-8: GR 13.2, E_v 107 lx, Anteile L_vl 0.08, 0.31, 0.08
+
+Lochung 50 %, Montagehöhe 5 m:
+  Feld E_h: Mittel 1177 lx, Min 188 lx, Max 2358 lx, U0 0.16 -> keine Klasse (E_h reicht für Klasse I (Wettkampf national/international), U0 zu gering)
+  durchgehende Reihe (alle 6 m), Streifen 8 m tief: Mittel 1364 lx, Min 325 lx, U0 0.24 -> keine Klasse
+  Zuschauer-GR: min 0.0, max 20.3, Mittel 13.7; an x=0/y=-8: GR 17.3, E_v 99 lx, Anteile L_vl 0.09, 0.77, 0.09
+
+Lochung 50 %, Montagehöhe 8 m:
+  Feld E_h: Mittel 839 lx, Min 388 lx, Max 1396 lx, U0 0.46 -> keine Klasse (E_h reicht für Klasse I (Wettkampf national/international), U0 zu gering)
+  durchgehende Reihe (alle 6 m), Streifen 8 m tief: Mittel 1094 lx, Min 769 lx, U0 0.70 -> Klasse I
+  Zuschauer-GR: min 0.0, max 14.8, Mittel 9.3; an x=0/y=-8: GR 14.4, E_v 121 lx, Anteile L_vl 0.09, 0.35, 0.09
+
