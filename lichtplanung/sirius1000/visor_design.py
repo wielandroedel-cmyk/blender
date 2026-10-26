@@ -9,15 +9,17 @@ Lichtverteilung nach hinten der LDT "SIRIUS BLENDE 3" (ohne externe Blende) ents
      - Stirnblech an der hinteren Glaskante (a = -0.396 m), Tiefe D unter dem Glas,
        geneigt um beta (beta > 0: Unterkante weiter nach hinten, beta < 0: unter das Glas),
        Lochanteil p (Raster 12 mm, Blech 1,5 mm; 0 = geschlossen)
-     - Seitenwangen b = +-0.167 m, Länge 237 mm, Tiefe von D am Stirnblech linear auf
-       D * 0.42 vorn (Proportion der V2-Wangen), gleiche Lochung
+     - Seitenwangen b = +-0.167 m, Länge 237 mm, wie V2: 211 mm am Stirnblech, 89 mm vorn,
+       gleiche Lochung. Tiefere Wangen schneiden das Licht zur Seite (C90/C270) ab und kosten
+       in der Arena-Reihe die Gleichmäßigkeit für Klasse I (siehe variant_study.py).
    Innenseite matt schwarz angenommen: Reflexionen an der neuen Blende werden nicht addiert,
    Reflexionen der V2-Blende bleiben wie gemessen enthalten (konservativ).
 3. Gittersuche über D, beta, p: kleinste Abweichung zur Blende 3 im hinteren Halbraum
    Neigung nur >= 0 (Unterkante nicht unter dem Glas), sonst schattet das Blech senkrecht nach
    unten ab und es gehen ~7 % Lichtstrom verloren.
    (C 90…270°, gamma 0…85°, d. h. auch ohne Verlust im Hauptlicht, logarithmisch, raumwinkelgewichtet). Bei fast gleicher
-   Abweichung (2 %) gewinnt die kürzere (leichtere) Blende.
+   Abweichung (2 %) gewinnt die tiefste Blende bis 450 mm: mehr Tiefe senkt die Blendung bei
+   5 m Montagehöhe deutlich, die Abweichung zur Blende 3 kaum.
 4. Ausgabe: LVK als IES und LDT (EULUMDAT), Kenndaten, Diagramm, Maßzeichnung.
 """
 
@@ -38,6 +40,8 @@ PLATE_HALF_W = 0.168     # Stirnblech bis an die Wangen
 CHEEK_B = 0.167
 CHEEK_LEN = 0.237
 CHEEK_FRONT_RATIO = 0.089 / 0.211
+CHEEK_DEPTH = 0.211     # Wangen wie V2
+MAX_DEPTH = 0.45
 SOLID_TOP = 0.035        # ungelochter Streifen am Glas (wie V2)
 MARGIN = 0.012           # ungelochter Rand
 
@@ -46,8 +50,9 @@ SOURCE_IES = "sirius1000.ies"
 
 
 class Visor:
-    def __init__(self, depth, beta_deg, open_area):
+    def __init__(self, depth, beta_deg, open_area, cheek_depth=None):
         self.D = depth
+        self.Dc = depth if cheek_depth is None else cheek_depth  # Wangentiefe am Stirnblech
         self.beta = math.radians(beta_deg)
         self.p = open_area
         self.d_hole = d_for_open_area(open_area) if open_area > 0 else None
@@ -87,7 +92,7 @@ class Visor:
                     ha, hh = pa + s * da, s * dh
                     a_start = A_BACK - hh * tb
                     rel = np.clip((ha - a_start) / CHEEK_LEN, 0, 1)
-                    depth = self.D * (1 - rel * (1 - CHEEK_FRONT_RATIO))
+                    depth = self.Dc * (1 - rel * (1 - CHEEK_FRONT_RATIO))
                     hit = ((s > 0) & (ha >= a_start) & (ha <= a_start + CHEEK_LEN) &
                            (hh >= 0) & (hh <= depth))
                     field = (hh >= SOLID_TOP) & (hh <= depth - MARGIN)
@@ -159,15 +164,15 @@ def main():
     for depth in np.arange(0.25, 0.551, 0.025):
         for beta in (0, 10, 20, 30, 40):  # nicht unter das Glas: kein Verlust senkrecht nach unten
             for p in (0.0, 0.034, 0.10, 0.20, 0.30, 0.40):
-                v = Visor(round(depth, 3), beta, p)
+                v = Visor(round(depth, 3), beta, p, CHEEK_DEPTH)
                 i_new, _ = design_lvk(v, base)
                 err, bias = target_error(i_new, target, c, g)
                 results.append((err, bias, round(depth, 3), beta, p))
     results.sort()
     best_err = results[0][0]
-    # leichteste Blende innerhalb von 2 % des besten Fehlers
-    near = [r for r in results if r[0] <= best_err * 1.02]
-    chosen = min(near, key=lambda r: (r[2], abs(r[3]), -r[4]))
+    # tiefste Blende bis MAX_DEPTH innerhalb von 2 % des besten Fehlers
+    near = [r for r in results if r[0] <= best_err * 1.02 and r[2] <= MAX_DEPTH + 1e-9]
+    chosen = max(near, key=lambda r: (r[2], -abs(r[3]), -r[0]))
     print("beste 8 Kombinationen (Fehler, Tendenz, Tiefe, Neigung, Lochanteil):")
     for r in results[:8]:
         print("  %.3f  %+.3f  D=%.3f m  beta=%+3d°  p=%.0f %%" % (r[0], r[1], r[2], r[3], r[4] * 100))
@@ -175,18 +180,18 @@ def main():
     print(f"Gewählt: D = {depth * 1000:.0f} mm, Neigung {beta:+d}°, Lochanteil {p * 100:.0f} % "
           f"(Fehler {err:.3f}, Tendenz {bias:+.3f})")
 
-    visor = Visor(depth, beta, p)
+    visor = Visor(depth, beta, p, CHEEK_DEPTH)
     i_new, t_new = design_lvk(visor, base)
     flux = lumen(c, g, i_new)
     name = "SIRIUS_1000_Blende_B3_aussen"
     note = (f"Berechnet: Stirnblech {depth * 1000:.0f} mm tief, Neigung {beta:+d} Grad, Lochung "
-            f"{p * 100:.0f} %, Wangen 237 mm, innen matt schwarz")
+            f"{p * 100:.0f} %, Wangen wie V2, innen matt schwarz")
     write_ies(os.path.join(DATA_DIR, "sirius1000_visor_b3.ies"), os.path.join(DATA_DIR, SOURCE_IES),
               c, g, i_new, flux, name, note)
     write_ldt(os.path.join(DATA_DIR, "SIRIUS1000_Blende_B3_aussen_berechnet.ldt"), c, g, i_new,
               flux, name, note)
     np.save(os.path.join(DATA_DIR, "visor_design.npy"),
-            np.array([depth, beta, p, flux, err], dtype=float))
+            np.array([depth, beta, p, flux, err, CHEEK_DEPTH], dtype=float))
 
     ci180 = int(np.argmin(np.abs(c - 180)))
     print(f"Lichtstrom {flux:.0f} lm (V2 {lumen(c, g, table):.0f} lm)")
@@ -230,13 +235,14 @@ def plot(c, g, table, i_new, target, visor, err):
     x0, x1 = -396, -396 - D * tb
     ax.plot([x0, x1], [0, D], color="#17202b", lw=3)
     cheek_end = -396 + 237
-    ax.plot([x1, cheek_end - D * tb * 0], [D, D * CHEEK_FRONT_RATIO], color="#5b6673", lw=1.5, ls="--")
-    ax.plot([cheek_end, cheek_end], [0, D * CHEEK_FRONT_RATIO], color="#5b6673", lw=1.5, ls="--")
+    Dc = visor.Dc * 1000
+    ax.plot([-396 - Dc * tb, cheek_end], [Dc, Dc * CHEEK_FRONT_RATIO], color="#5b6673", lw=1.5, ls="--")
+    ax.plot([cheek_end, cheek_end], [0, Dc * CHEEK_FRONT_RATIO], color="#5b6673", lw=1.5, ls="--")
     ax.annotate("", xy=(x1 - 40, 0), xytext=(x1 - 40, D), arrowprops=dict(arrowstyle="<->"))
     ax.text(x1 - 50, D / 2, f"{D:.0f} mm", ha="right", va="center", fontsize=10, weight="bold")
     ax.text(x1 + 10, D + 18, f"Stirnblech, Neigung {math.degrees(visor.beta):+.0f}°, "
             f"Lochung {visor.p * 100:.0f} %", fontsize=9, va="top")
-    ax.text(cheek_end + 8, D * CHEEK_FRONT_RATIO / 2, "Wange\n237 mm", fontsize=8, color="#5b6673")
+    ax.text(cheek_end + 8, Dc * CHEEK_FRONT_RATIO + 10, "Wange 237 mm", fontsize=8, color="#5b6673", va="top")
     ax.arrow(250, 150, 90, 120, width=3, color="#a35a00")
     ax.text(250, 140, "Hauptstrahl nach vorn (C0)", fontsize=8, color="#a35a00", ha="center", va="bottom")
     ax.text(-640, -150, "← hinten (C180, zur Person)", fontsize=8, ha="left", va="center")

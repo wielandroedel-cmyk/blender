@@ -6,7 +6,7 @@ SIRIUS-STEP-Datei und Austausch gegen die Blende V2.
 
 STEP-Koordinaten [mm]: X = 184 + b (quer), Y = a (C0 nach vorn, Stirnblech bei Y = -396),
 Z = -48 - h (Glas bei Z = -48, nach unten negativ). Blech 1,5 mm, Lochraster 12 mm.
-Stirnblech und Wangen reichen wie bei V2 bis Z = +16 (Befestigung am Lichtkopf).
+Wangen wie V2 (211 mm am Stirnblech, 89 mm vorn). Stirnblech und Wangen reichen wie bei V2 bis Z = +16 (Befestigung am Lichtkopf).
 
 Ausgabe: blende_b3_aussen.stp (nur Blende), sirius1000_blende_b3.stp (Leuchte mit neuer Blende),
 sirius1000_visor_b3.glb (für Blender).
@@ -63,7 +63,8 @@ def build(visor):
     half_w = PLATE_HALF_W * 1000
     cheek_x = CHEEK_B * 1000
     length = CHEEK_LEN * 1000
-    d_front = D * CHEEK_FRONT_RATIO
+    Dc = visor.Dc * 1000
+    d_front = Dc * CHEEK_FRONT_RATIO
     tb = math.tan(visor.beta)
 
     def z(h):
@@ -80,7 +81,7 @@ def build(visor):
         x_in = x_out - sign * SHEET
         prof = [(min(x_out, x_in), y_back, Z_TOP), (min(x_out, x_in), y_back + length, Z_TOP),
                 (min(x_out, x_in), y_back + length, z(d_front)),
-                (min(x_out, x_in), y_back - D * tb, z(D))]
+                (min(x_out, x_in), y_back - Dc * tb, z(Dc))]
         shape = BRepAlgoAPI_Fuse(shape, prism(prof, (SHEET, 0, 0))).Shape()
 
     # Lochung im Feld wie im Rechenmodell (visor_design.Visor)
@@ -105,7 +106,7 @@ def build(visor):
         x_out = X0 + sign * cheek_x
         ax = np.array([sign * 1.0, 0, 0])
         for ay in np.arange(m + r, length - m - r + 1e-6, PITCH):
-            depth = D - (D - d_front) * ay / length
+            depth = Dc - (Dc - d_front) * ay / length
             for hh in np.arange(h0 + r, depth - m - r + 1e-6, PITCH):
                 c = np.array([x_out, y_back + ay, z(hh)]) - ax * (SHEET + 5)
                 builder.Add(tools, BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(*c), gp_Dir(*ax)), r,
@@ -119,7 +120,7 @@ def build(visor):
 def main():
     step_in = sys.argv[1]
     vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))
-    visor = Visor(float(vd[0]), float(vd[1]), float(vd[2]))
+    visor = Visor(float(vd[0]), float(vd[1]), float(vd[2]), float(vd[5]))
     shape, n = build(visor)
     print(f"Blende: Tiefe {visor.D * 1000:.0f} mm, Neigung {math.degrees(visor.beta):+.0f}°, "
           f"{n} Löcher Ø {visor.d_hole:.2f} mm ({visor.p * 100:.0f} %)")

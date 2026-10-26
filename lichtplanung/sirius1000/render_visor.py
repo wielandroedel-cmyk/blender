@@ -15,8 +15,8 @@ from mathutils import Matrix, Vector
 DATA_DIR = sys.argv[-1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[-1]) else \
     os.path.dirname(os.path.abspath(__file__))
 GLASS_CENTER_MODEL = Vector((0.184, 0.046, 0.0))
-VIEWS = {"hinten": ((1.5, -2.3, -1.25), (0.0, -0.18, -0.12)),
-         "seite": ((2.6, -0.25, -0.35), (0.0, -0.05, -0.12))}
+VIEWS = {"hinten": ((1.9, -2.9, -1.6), (0.0, -0.2, -0.2)),
+         "seite": ((2.9, -0.25, -0.4), (0.0, -0.05, -0.18))}
 
 
 def setup():
@@ -35,7 +35,7 @@ def setup():
     sun.data.energy = 3.0
     sun.rotation_euler = (math.radians(140), math.radians(20), math.radians(-30))
     sc.collection.objects.link(sun)
-    sc.render.resolution_x, sc.render.resolution_y = 1200, 860
+    sc.render.resolution_x, sc.render.resolution_y = 2400, 1720
     sc.view_settings.view_transform = 'Standard'
     return sc
 

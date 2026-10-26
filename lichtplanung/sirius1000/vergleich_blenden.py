@@ -28,7 +28,7 @@ from perforation import D_OLD, d_for_open_area  # noqa: E402
 from visor_design import Visor  # noqa: E402
 
 _vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))  # Tiefe, Neigung, Lochanteil, ...
-VISOR_B3 = Visor(float(_vd[0]), float(_vd[1]), float(_vd[2]))
+VISOR_B3 = Visor(float(_vd[0]), float(_vd[1]), float(_vd[2]), float(_vd[5]))
 
 # (Kürzel, Beschriftung, IES, Lochdurchmesser der außenliegenden Blende oder None = keine)
 VARIANTS = [
