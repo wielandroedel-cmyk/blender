@@ -28,3 +28,7 @@ Vergleich der Lichtverteilungen (SIRIUS 1000, je 111.246 lm)
   5 m: Person I 855 cd, E_v 9.8 lx, GR 6.5 | Rückwand Ē 3.7 lx, Emax 18.3 lx | Feld 3 Leuchten Ē 1148 lx U0 0.15 | Reihe Ē 1342 lx U0 0.22 -> keine Klasse | Zuschauer GR max 13.6, an x0/y-8 2.4, E_v 35 lx
   8 m: Person I 5393 cd, E_v 37.3 lx, GR 14.7 | Rückwand Ē 8.2 lx, Emax 23.8 lx | Feld 3 Leuchten Ē 828 lx U0 0.44 | Reihe Ē 1093 lx U0 0.66 -> Klasse III | Zuschauer GR max 9.4, an x0/y-8 8.1, E_v 70 lx
 
+=== KB: Kiemenblende RAL 9010 (berechnet)
+  5 m: Person I 3002 cd, E_v 34.6 lx, GR 21.9 | Rückwand Ē 7.8 lx, Emax 22.4 lx | Feld 3 Leuchten Ē 912 lx U0 0.09 | Reihe Ē 1063 lx U0 0.15 -> keine Klasse | Zuschauer GR max 14.8, an x0/y-8 13.1, E_v 60 lx
+  8 m: Person I 4877 cd, E_v 33.7 lx, GR 15.6 | Rückwand Ē 11.5 lx, Emax 23.2 lx | Feld 3 Leuchten Ē 686 lx U0 0.38 | Reihe Ē 903 lx U0 0.59 -> Klasse III | Zuschauer GR max 9.3, an x0/y-8 9.3, E_v 66 lx
+

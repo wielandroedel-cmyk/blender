@@ -46,8 +46,9 @@ VARIANTS = [
     ("B3", "ohne ext. Blende – Blende 3", "sirius1000_b3.ies", None),
     ("B3a", "neue ext. Blende wie B3 (berechnet)", "sirius1000_visor_b3.ies", VISOR_B3),
     ("B3k", "kompakte ext. Blende mit Lamelle (berechnet)", "sirius1000_visor_b3k.ies", VISOR_B3K),
+    ("KB", "Kiemenblende RAL 9010 (berechnet)", "sirius1000_kiemen.ies", None),
 ]
-COLORS = {"V2": "#17202b", "V2s": "#5b6673", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46", "B3a": "#7a4fb0", "B3k": "#c0392b"}
+COLORS = {"V2": "#17202b", "V2s": "#5b6673", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46", "B3a": "#7a4fb0", "B3k": "#c0392b", "KB": "#e0a800"}
 HEIGHTS = [5.0, 8.0]
 WALL_Y, WALL_W = -10.0, 12.0
 

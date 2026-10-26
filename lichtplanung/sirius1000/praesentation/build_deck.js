@@ -29,7 +29,7 @@ pres.subject = "Vergleich Blende wie geliefert (Lochung 3,4 %) und Lochung 50 %"
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 const C = pres.SchemeColor;
 
-const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. D · 26.10.2026 · Entwurf zur Prüfung";
+const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. E · 26.10.2026 · Entwurf zur Prüfung";
 
 // ---------------------------------------------------------------- Layouts
 pres.defineSlideMaster({
@@ -851,6 +851,85 @@ pres.addSection({ title: "V2 seitlich überarbeitet" });
     "der V2. U0 0,697 (V2s) und 0,699 (V2) runden beide auf 0,70.");
 }
 
+// ================================================================= Kiemenblende
+pres.addSection({ title: "Kiemenblende" });
+{
+  const s = content("Kiemenblende", "KIEMENBLENDE · KONZEPT",
+    "Ein Blech, 54 gedrückte Lamellen, 35 mm Bautiefe");
+  s.addImage({ path: IMG("ansicht_kb_hinten.png"), x: 0.6, y: 1.85, w: 5.4, h: 3.405,
+    altText: "SIRIUS 1000 mit Kiemenblende, Ansicht von hinten unten", objectName: "KB Ansicht hinten" });
+  s.addImage({ path: IMG("ansicht_kb_seite.png"), x: 0.6, y: 5.35, w: 5.4, h: 1.595,
+    altText: "SIRIUS 1000 mit Kiemenblende, Seitenansicht", objectName: "KB Seitenansicht" });
+  numberedBlock(s, 6.5, 1.85, 6.2, "1", "Aufbau",
+    "Blech 1 mm, 792 × 340 mm, 14 mm unter dem Glas. 18 Reihen × 3 Felder, Lamellen 40 × 98 mm " +
+    "ausgeklinkt, an der hinteren Kante 60° nach unten gedrückt, Steg 2 mm.", "KB 1");
+  numberedBlock(s, 6.5, 3.55, 6.2, "2", "Wirkung",
+    "Die Lamellen stehen fast parallel zum Hauptstrahl (C0, γ 35°) und fangen das Licht nach hinten ab. " +
+    "Bautiefe 35 mm statt 211 mm bei V2.", "KB 2");
+  numberedBlock(s, 6.5, 5.25, 6.2, "3", "Oberfläche RAL 9010",
+    "Reflexionsgrad 0,85 (0,80 diffus): Licht auf den Lamellen wird gestreut statt geschluckt, " +
+    "ein Teil geht aber zurück in die Leuchte.", "KB 3");
+  s.addNotes("visor_kiemen.py: Monte-Carlo-Strahlverfolgung mit diffuser und gerichteter Reflexion, " +
+    "Startverteilung = Optik ohne außenliegende Blende. CAD: kiemenblende.stp (Lamellen und Schlitze " +
+    "wie gerechnet, Befestigung an den gekanteten Längsseiten nicht detailliert).");
+}
+{
+  const s = content("Kiemenblende", "KIEMENBLENDE · STUDIE",
+    "Das Kiemenblech erreicht höchstens 68 % Wirkungsgrad");
+  const lab = D.kb_theta.map((t) => `${t}°`);
+  s.addChart(pres.charts.LINE, [
+    { name: "Wirkungsgrad Kiemenblende [%]", labels: lab, values: D.kb_eta40 },
+    { name: "V2 heute [%]", labels: lab, values: D.kb_theta.map(() => 90.2) },
+  ], {
+    x: 0.6, y: 1.8, w: 6.6, h: 4.9, ...CHART_TEXT,
+    chartColors: [HEX.accent1, HEX.dk1], lineSize: 2, lineDataSymbol: "circle", lineDataSymbolSize: 7,
+    valAxisMinVal: 50, valAxisMaxVal: 95, valAxisMajorUnit: 5, showLegend: true, legendPos: "b",
+    showTitle: true, title: "Lamelle 40 mm: Wirkungsgrad über dem Drückwinkel",
+    showCatAxisTitle: true, catAxisTitle: "Drückwinkel der Lamelle", objectName: "KB Studie",
+  });
+  const rows = [[head("WINKEL"), head("WIRKUNGSGRAD"), head("GR 5 m")]];
+  D.kb_theta.forEach((t, i) => {
+    const sel = t === 60;
+    const f = sel ? (x) => cell(x, { bold: true, color: C.accent1 }) : cell;
+    rows.push([f(`${t}°`), f(`${fmtDE(D.kb_eta40[i], 1)} %`), f(fmtDE(D.kb_gr40[i], 1))]);
+  });
+  s.addTable(rows, tableOpts(7.6, 1.85, 5.1, [1.3, 2.1, 1.7], { fontSize: 12 }));
+  s.addText("Verluste: 8 % Stege, dazu verdeckt jede Lamelle von unten gesehen ihren Schlitz zur Hälfte. " +
+    "Flache Winkel schirmen besser ab, steile verlieren das Licht nach vorn an der nächsten Lamelle. " +
+    "Kürzere Lamellen (8–30 mm) liegen 1–7 Punkte darunter.", { x: 7.6, y: 5.0, w: 5.1, h: 1.6,
+    fontSize: 12, color: C.text2, margin: 0, valign: "top", isTextBox: true, objectName: "KB Studie Text" });
+  s.addNotes("35 Varianten: Lamellen 8–40 mm, Drückwinkel 40–90°, Steg 2 mm, Querstege 4 mm alle 98 mm. " +
+    "Gewählt: höchster Wirkungsgrad, bei dem die Person nicht stärker geblendet wird als mit V2.");
+}
+{
+  const s = content("Kiemenblende", "KIEMENBLENDE · BEWERTUNG",
+    "Flach und blendarm, aber ein Drittel weniger Licht");
+  const win = (t) => cell(t, { bold: true, color: C.accent1 });
+  const rows = [
+    [head("KRITERIUM"), head("V2 HEUTE"), head("V2s"), head("KIEMENBLENDE")],
+    [cell("Bautiefe unter dem Glas"), cell("211 mm"), cell("211 mm"), win("35 mm")],
+    [cell("Wirkungsgrad der Blende"), cell("90,2 %"), win("96,2 %"), cell("67,9 % (76,5 %*)")],
+    [cell("Formänderung der Verteilung (0 = keine)"), cell("0,09"), win("0,03"), cell("0,26")],
+    [cell("Blendung Person, GR 5 m / 8 m"), cell("24,0 / 21,0"), cell("23,5 / 20,6"), win("21,9 / 15,6")],
+    [cell("Blendung Zuschauer, GR max 8 m"), cell("13,5"), cell("14,1"), win("9,3")],
+    [cell("Arena-Reihe 8 m, Ē / U0"), cell("1.080 lx / 0,70"), win("1.142 lx / 0,70"), cell("903 lx / 0,59")],
+    [cell("Klasse EN 12193 (8 m)"), win("Klasse I"), win("Klasse I"), cell("Klasse III")],
+  ];
+  s.addTable(rows, tableOpts(0.6, 1.8, 12.1, [4.0, 2.4, 2.4, 3.3], { fontSize: 12 }));
+  s.addText([
+    { text: "Einordnung: ", options: { bold: true, color: C.accent1 } },
+    { text: "Ein Kiemenblech über die ganze Fläche verändert die Verteilung zwangsläufig stark, weil jede " +
+      "Lamelle unter ihrem eigenen Schlitz hängt. Hoher Wirkungsgrad und unveränderte Verteilung erreicht " +
+      "V2s. Die Kiemenblende lohnt sich, wo flache Bauform und wenig Blendung wichtiger sind. Mit " +
+      "spiegelnder Aluminium-Oberseite statt RAL 9010 wären rund 81 % möglich (gerechnet)." },
+  ], { x: 0.6, y: 5.05, w: 12.1, h: 1.45, fontSize: 13, color: C.text1, margin: 0, valign: "top",
+    isTextBox: true, objectName: "KB Einordnung" });
+  s.addText("* wenn die Leuchte die Hälfte des zurückgeworfenen Lichts wieder abgibt", { x: 0.6, y: 6.55,
+    w: 12.1, h: 0.3, fontSize: 10, color: C.text2, margin: 0, isTextBox: true, objectName: "KB Fußnote" });
+  s.addNotes("Formänderung: logarithmische Abweichung der normierten Verteilung von der Optik ohne Blende " +
+    "nach vorn und zur Seite (C270–C90, γ 0–80°). Wirkungsgrad = Lichtstrom mit / ohne außenliegende Blende.");
+}
+
 // ================================================================= 13 Annahmen
 pres.addSection({ title: "Anhang" });
 {
@@ -874,7 +953,7 @@ pres.addSection({ title: "Anhang" });
       "Zuschauer in Augenhöhe 1,2 m (keine ansteigende Tribüne)", options: { bullet: true, breakLine: true } },
     { text: "Blende 2/3: relative LDT (4000 K, CRI 70), auf 111.246 lm gesetzt und um 90° gedreht; " +
       "Vergleich bei gleichem Lichtstrom", options: { bullet: true, breakLine: true } },
-    { text: "B3a/B3k/V2s: Blende und LVK berechnet (Strahlenmodell, Innenseite matt schwarz), nicht gemessen",
+    { text: "B3a, B3k, V2s und Kiemenblende (RAL 9010, ρ 0,85): berechnet, nicht gemessen",
       options: { bullet: true } },
   ], { x: 0.6, y: 1.85, w: 12.1, h: 4.9, fontSize: 16, color: C.text1, margin: 0, valign: "top",
     paraSpaceAfter: 6, isTextBox: true, objectName: "Annahmen Liste" });
