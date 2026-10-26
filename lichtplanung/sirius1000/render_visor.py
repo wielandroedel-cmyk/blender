@@ -2,7 +2,7 @@
 Ansicht der Leuchte mit Blende V2 und mit der neuen Blende (Cycles-Renderings für die
 Präsentation).
 
-    python render_visor.py [v2|b3a|b3k|v2s|kb ...] [ordner]
+    python render_visor.py [v2|b3a|b3k|v2s|kb ...] [--alle] [ordner]
 """
 
 import math
@@ -17,6 +17,14 @@ DATA_DIR = sys.argv[-1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[-1]) els
 GLASS_CENTER_MODEL = Vector((0.184, 0.046, 0.0))
 VIEWS = {"hinten": ((1.9, -2.9, -1.6), (0.0, -0.2, -0.2)),
          "seite": ((2.9, -0.25, -0.4), (0.0, -0.05, -0.18))}
+# zusätzliche Ansichten nur auf Wunsch: python render_visor.py v2s --alle
+EXTRA_VIEWS = {"vorn": ((1.4, 2.7, -1.5), (0.0, -0.05, -0.12)),
+               "unten": ((0.25, -0.9, -2.6), (0.0, -0.1, -0.05)),
+               "detail": ((0.8, 0.25, -0.5), (0.15, -0.37, -0.12), 85)}
+if "--detail" in sys.argv:
+    VIEWS = {"detail": EXTRA_VIEWS["detail"]}
+elif "--alle" in sys.argv:
+    VIEWS.update(EXTRA_VIEWS)
 
 
 def setup():
@@ -57,9 +65,10 @@ def load(glb):
 def render(glb, tag):
     sc = setup()
     load(glb)
-    for name, (pos, target) in VIEWS.items():
+    for name, view in VIEWS.items():
+        pos, target = view[:2]
         cam_data = bpy.data.cameras.new(name)
-        cam_data.lens = 50
+        cam_data.lens = view[2] if len(view) > 2 else 50
         cam = bpy.data.objects.new(name, cam_data)
         sc.collection.objects.link(cam)
         cam.location = pos

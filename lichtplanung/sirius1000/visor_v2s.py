@@ -40,13 +40,26 @@ A_START = -0.394                      # Wangen beginnen am Stirnblech
 V2_CHEEK = dict(depth=0.211, front=0.0885, length=0.237, d_hole=D_OLD)
 
 
-class V2Sides:
-    """V2 mit wählbaren Wangen; depth = 0 heißt ohne Wangen."""
+def hole_tr(d, pitch, cos_inc, sheet=1.5):
+    """Wie perforation.hole_transmission, aber mit wählbarer Teilung [mm]."""
+    cos_inc = np.clip(np.abs(cos_inc), 1e-6, 1.0)
+    s = sheet * np.sqrt(1.0 - cos_inc ** 2) / cos_inc
+    r = d / 2.0
+    x = np.clip(s / (2 * r), 0.0, 1.0)
+    overlap = 2 * r * r * np.arccos(x) - (s / 2) * np.sqrt(np.maximum(4 * r * r - s * s, 0))
+    overlap = np.where(s >= 2 * r, 0.0, overlap)
+    return overlap / pitch ** 2
 
-    def __init__(self, depth, front, length, open_ratio):
+
+class V2Sides:
+    """V2 mit wählbaren Wangen; depth = 0 heißt ohne Wangen. plate_d/plate_pitch: Lochung des
+    Stirnblechs (Standard wie V2: Ø 2,5 mm, Teilung 12 mm; plate_d = 0: geschlossen)."""
+
+    def __init__(self, depth, front, length, open_ratio, plate_d=D_OLD, plate_pitch=12.0):
         self.depth, self.front, self.length = depth, front, length
         self.p = open_ratio
         self.d_hole = d_for_open_area(open_ratio) if open_ratio > 0 else None
+        self.plate_d, self.plate_pitch = plate_d, plate_pitch
 
     def cheek_depth(self, a):
         rel = np.clip((a - A_START) / self.length, 0, 1) if self.length > 0 else 0
@@ -72,7 +85,8 @@ class V2Sides:
                        (hh >= END_PLATE["h"][0]) & (hh <= END_PLATE["h"][1]))
                 field = ((hb >= END_PLATE["field_b"][0]) & (hb <= END_PLATE["field_b"][1]) &
                          (hh >= END_PLATE["field_h"][0]) & (hh <= END_PLATE["field_h"][1]))
-                t = t * np.where(hit, np.where(field, hole_transmission(D_OLD, da), 0.0), 1.0)
+                tau_p = hole_tr(self.plate_d, self.plate_pitch, da) if self.plate_d > 0 else 0.0
+                t = t * np.where(hit, np.where(field, tau_p, 0.0), 1.0)
             # Wangen
             if self.depth > 0 and abs(db) > 1e-9:
                 tau = 0.0 if self.d_hole is None else hole_transmission(self.d_hole, db)

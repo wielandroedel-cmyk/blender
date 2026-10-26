@@ -29,7 +29,7 @@ pres.subject = "Vergleich Blende wie geliefert (Lochung 3,4 %) und Lochung 50 %"
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 const C = pres.SchemeColor;
 
-const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. E · 26.10.2026 · Entwurf zur Prüfung";
+const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. F · 26.10.2026 · Entwurf zur Prüfung";
 
 // ---------------------------------------------------------------- Layouts
 pres.defineSlideMaster({
@@ -849,6 +849,97 @@ pres.addSection({ title: "V2 seitlich überarbeitet" });
     isTextBox: true, objectName: "V2s Einordnung" });
   s.addNotes("Werte aus visor_v2s.txt und vergleich_blenden.txt; alle Varianten bei der gemessenen Optik " +
     "der V2. U0 0,697 (V2s) und 0,699 (V2) runden beide auf 0,70.");
+}
+
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · ANSICHTEN",
+    "Stirnblech wie V2, kleine Eckwinkel, Kanten nach hinten");
+  const imgs = [["ansicht_v2s_hinten.png", 4.6, 0.6432, "Von hinten unten: Stirnblech mit Lochung"],
+                ["ansicht_v2s_vorn.png", 3.1, 0.9588, "Von vorn unten: Glas frei, nur Eckwinkel"],
+                ["ansicht_v2s_detail.png", 2.55, 1.1645, "Innenseite: Eckwinkel und Seitenkante"]];
+  let x = 0.6;
+  imgs.forEach(([f, w, r, cap], i) => {
+    const h = Math.min(w * r, 3.0);
+    const ww = h / r;
+    s.addImage({ path: IMG(f), x, y: 1.9 + (3.0 - h) / 2, w: ww, h, altText: cap, objectName: `V2s Ansicht ${i + 1}` });
+    s.addText(cap, { x, y: 5.0, w: Math.max(ww, 2.5), h: 0.5, fontSize: 10, color: C.text2, margin: 0,
+      valign: "top", isTextBox: true, objectName: `V2s Ansicht ${i + 1} Text` });
+    x += Math.max(ww, 2.5) + 0.35;
+  });
+  s.addText([
+    { text: "Anbindung unverändert: ", options: { bold: true, color: C.accent1 } },
+    { text: "L-Winkel mit 2 Schrauben hinten, Wangenstreifen über dem Glas bis zum Halteblech. Neu sind nur " +
+      "die zurückgeschnittenen Wangen und die 15-mm-Kantungen." },
+  ], { x: 0.6, y: 5.75, w: 12.1, h: 0.8, fontSize: 13, color: C.text1, margin: 0, valign: "top",
+    isTextBox: true, objectName: "V2s Ansichten Text" });
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · MASSZEICHNUNG", "Hauptmaße der Blende V2s");
+  s.addImage({ path: IMG("v2s_zeichnung.png"), x: 1.17, y: 1.7, w: 11.0, h: 5.08,
+    altText: "Maßzeichnung V2s: Ansicht von hinten mit Lochfeld und Seitenansicht mit Eckwinkel",
+    objectName: "V2s Zeichnung" });
+  s.addNotes("Entwurfszeichnung aus v2s_final.py. CAD: blende_v2s.stp (Original-V2 aus der STEP-Datei, " +
+    "Wangen zurückgeschnitten, Kantungen ergänzt). Biegeradien und Toleranzen nicht festgelegt.");
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · LOCHUNG DES STIRNBLECHS",
+    "Mehr Lochung bringt kaum Licht, aber mehr Blendung");
+  const lab = D.lo_p12.map((p) => `${fmtDE(p, p % 1 ? 1 : 0)} %`);
+  s.addChart(pres.charts.LINE, [
+    { name: "Teilung 12 mm", labels: lab, values: D.lo_eta12 },
+    { name: "V2 heute", labels: lab, values: D.lo_p12.map(() => 90.2) },
+  ], {
+    x: 0.6, y: 1.8, w: 5.9, h: 4.3, ...CHART_TEXT, chartColors: [HEX.accent1, HEX.dk1],
+    lineSize: 2, lineDataSymbol: "circle", lineDataSymbolSize: 6, valAxisMinVal: 88, valAxisMaxVal: 98,
+    valAxisMajorUnit: 2, showLegend: true, legendPos: "b", showTitle: true,
+    title: "Wirkungsgrad der Blende [%]", showCatAxisTitle: true, catAxisTitle: "offene Fläche",
+    objectName: "V2s Lochung Wirkungsgrad",
+  });
+  s.addChart(pres.charts.LINE, [
+    { name: "GR 5 m", labels: lab, values: D.lo_gr5_12 },
+    { name: "GR 8 m", labels: lab, values: D.lo_gr8_12 },
+    { name: "V2 heute 5 m", labels: lab, values: D.lo_p12.map(() => 23.95) },
+  ], {
+    x: 6.8, y: 1.8, w: 5.9, h: 4.3, ...CHART_TEXT, chartColors: [HEX.accent1, HEX.accent2, HEX.dk1],
+    lineSize: 2, lineDataSymbol: "circle", lineDataSymbolSize: 6, valAxisMinVal: 20, valAxisMaxVal: 27,
+    valAxisMajorUnit: 1, showLegend: true, legendPos: "b", showTitle: true,
+    title: "Blendung der Person (GR)", showCatAxisTitle: true, catAxisTitle: "offene Fläche",
+    objectName: "V2s Lochung GR",
+  });
+  s.addText([
+    { text: "Ergebnis: ", options: { bold: true, color: C.accent1 } },
+    { text: "Von geschlossen bis 40 % offen steigt der Wirkungsgrad nur um 0,6 Punkte, GR steigt um 2,6. " +
+      "Empfehlung: Lochung wie V2 behalten (Ø 2,5 mm, Teilung 12 mm, 3,4 %): gleiches Werkzeug, Blende " +
+      "scheint leicht durch, Blendung praktisch wie geschlossen. Teilung 8 mm bringt nichts." },
+  ], { x: 0.6, y: 6.2, w: 12.1, h: 0.75, fontSize: 12, color: C.text1, margin: 0, valign: "top",
+    isTextBox: true, objectName: "V2s Lochung Ergebnis" });
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · BEFESTIGUNG",
+    "Mit 15-mm-Kanten ist V2s steifer als die heutige V2");
+  s.addImage({ path: IMG("v2s_befestigung.png"), x: 0.6, y: 1.8, w: 12.1, h: 4.011,
+    altText: "Durchbiegung des Stirnblechs für fünf Ausführungen", objectName: "V2s Befestigung Bild" });
+  s.addText([
+    { text: "Gewählt: Seiten- und Unterkante 15 mm nach hinten. ", options: { bold: true, color: C.accent1 } },
+    { text: "0,27 mm statt 1,13 mm Durchbiegung (V2) bei 0,5 kN/m², erste Eigenfrequenz 78 statt 40 Hz. " +
+      "Die Kanten liegen hinter dem Stirnblech im Schatten und ändern die Lichtverteilung nicht. Ein " +
+      "größerer Eckwinkel (100 mm) bringt nichts mehr." },
+  ], { x: 0.6, y: 5.95, w: 12.1, h: 0.9, fontSize: 13, color: C.text1, margin: 0, valign: "top",
+    isTextBox: true, objectName: "V2s Befestigung Text" });
+  s.addNotes("Trägerrost-Modell (8-mm-Raster) des Stirnblechs, Stahl 1,5 mm. Lager: L-Winkel (Linie), " +
+    "Wangenstreifen über dem Glas, Eckwinkel bzw. Wangen darunter. Vergleichsrechnung, kein Festigkeitsnachweis.");
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · LICHTVERTEILUNG",
+    "LVK der V2s als LDT und IES");
+  s.addImage({ path: IMG("v2s_polar.png"), x: 0.6, y: 1.8, w: 8.3, h: 4.495,
+    altText: "Polardiagramme C0-C180 und C90-C270, V2 und V2s", objectName: "V2s Polar" });
+  kpi(s, 9.2, 1.85, 3.5, 1.45, "118.526 lm", "Lichtstrom (V2: 111.141 lm)", "V2s Lm", C.accent1);
+  kpi(s, 9.2, 3.45, 3.5, 1.45, "96,2 %", "Wirkungsgrad der Blende (V2: 90,2 %)", "V2s eta");
+  s.addText("Dateien: SIRIUS1000_Blende_V2s_berechnet.ldt (EULUMDAT, Isym 2) und sirius1000_v2s.ies " +
+    "(LM-63). Werte berechnet aus der gemessenen V2-LVK, nicht gemessen.", { x: 9.2, y: 5.1, w: 3.5,
+    h: 1.5, fontSize: 11, color: C.text2, margin: 0, valign: "top", isTextBox: true,
+    objectName: "V2s LVK Dateien" });
 }
 
 // ================================================================= Kiemenblende

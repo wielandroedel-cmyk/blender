@@ -1,0 +1,28 @@
+V2 heute: Wirkungsgrad 90.2 %, GR 23.95 / 21.00, Zuschauer 13.5, Rückwand 7.1 / 16.0 lx, Reihe 1080 lx U0 0.699
+
+Spannweite Wirkungsgrad über alle Lochungen: 0.62 Prozentpunkte
+Teilung 12 mm, offen  0.0 %, Ø 0.00 mm: Wirkungsgrad 96.2 %, GR 23.31 / 20.61, Zuschauer 14.0, Rückwand 8.6 / 18.0 lx, U0 0.697 zulässig
+Teilung 12 mm, offen  3.4 %, Ø 2.50 mm: Wirkungsgrad 96.2 %, GR 23.49 / 20.65, Zuschauer 14.1, Rückwand 8.7 / 18.2 lx, U0 0.697 zulässig
+Teilung 12 mm, offen  5.0 %, Ø 3.03 mm: Wirkungsgrad 96.2 %, GR 23.60 / 20.68, Zuschauer 14.1, Rückwand 8.8 / 18.3 lx, U0 0.697 zulässig
+Teilung 12 mm, offen  7.5 %, Ø 3.71 mm: Wirkungsgrad 96.3 %, GR 23.77 / 20.74, Zuschauer 14.2, Rückwand 9.0 / 18.5 lx, U0 0.697 zulässig
+Teilung 12 mm, offen 10.0 %, Ø 4.28 mm: Wirkungsgrad 96.3 %, GR 23.94 / 20.80, Zuschauer 14.2, Rückwand 9.2 / 18.7 lx, U0 0.697 zulässig
+Teilung 12 mm, offen 15.0 %, Ø 5.24 mm: Wirkungsgrad 96.4 %, GR 24.28 / 20.93, Zuschauer 14.4, Rückwand 9.5 / 19.1 lx, U0 0.697
+Teilung 12 mm, offen 20.0 %, Ø 6.06 mm: Wirkungsgrad 96.5 %, GR 24.62 / 21.05, Zuschauer 14.5, Rückwand 9.8 / 19.6 lx, U0 0.697
+Teilung 12 mm, offen 30.0 %, Ø 7.42 mm: Wirkungsgrad 96.6 %, GR 25.27 / 21.31, Zuschauer 14.8, Rückwand 10.5 / 20.4 lx, U0 0.697
+Teilung 12 mm, offen 40.0 %, Ø 8.56 mm: Wirkungsgrad 96.8 %, GR 25.89 / 21.56, Zuschauer 15.0, Rückwand 11.2 / 21.3 lx, U0 0.697
+Teilung 8 mm, offen  3.4 %, Ø 1.66 mm: Wirkungsgrad 96.2 %, GR 23.44 / 20.62, Zuschauer 14.1, Rückwand 8.7 / 18.1 lx, U0 0.697 zulässig
+Teilung 8 mm, offen  5.0 %, Ø 2.02 mm: Wirkungsgrad 96.2 %, GR 23.54 / 20.65, Zuschauer 14.1, Rückwand 8.8 / 18.2 lx, U0 0.697 zulässig
+Teilung 8 mm, offen  7.5 %, Ø 2.47 mm: Wirkungsgrad 96.3 %, GR 23.70 / 20.70, Zuschauer 14.1, Rückwand 8.9 / 18.4 lx, U0 0.697 zulässig
+Teilung 8 mm, offen 10.0 %, Ø 2.85 mm: Wirkungsgrad 96.3 %, GR 23.86 / 20.75, Zuschauer 14.2, Rückwand 9.1 / 18.6 lx, U0 0.697 zulässig
+Teilung 8 mm, offen 15.0 %, Ø 3.50 mm: Wirkungsgrad 96.3 %, GR 24.19 / 20.86, Zuschauer 14.3, Rückwand 9.4 / 19.0 lx, U0 0.697
+Teilung 8 mm, offen 20.0 %, Ø 4.04 mm: Wirkungsgrad 96.4 %, GR 24.52 / 20.98, Zuschauer 14.4, Rückwand 9.7 / 19.4 lx, U0 0.697
+Teilung 8 mm, offen 30.0 %, Ø 4.94 mm: Wirkungsgrad 96.6 %, GR 25.15 / 21.22, Zuschauer 14.7, Rückwand 10.4 / 20.2 lx, U0 0.697
+Teilung 8 mm, offen 40.0 %, Ø 5.71 mm: Wirkungsgrad 96.7 %, GR 25.76 / 21.46, Zuschauer 14.9, Rückwand 11.1 / 21.1 lx, U0 0.697
+
+Lochung gewählt: Teilung 12 mm, offen 3.4 %, Ø 2.50 mm, Wirkungsgrad 96.2 % (V2 90.2 %), GR 23.49 / 20.65, Zuschauer 14.1
+
+Befestigung V2 heute (Wangen 211 mm): Durchbiegung 1.13 mm bei 0,5 kN/m², erste Eigenfrequenz 40 Hz
+Befestigung V2s ohne Kantung: Durchbiegung 2.92 mm bei 0,5 kN/m², erste Eigenfrequenz 25 Hz
+Befestigung V2s + Seitenkanten: Durchbiegung 1.15 mm bei 0,5 kN/m², erste Eigenfrequenz 40 Hz
+Befestigung V2s + Seiten- und Unterkante: Durchbiegung 0.27 mm bei 0,5 kN/m², erste Eigenfrequenz 78 Hz
+Befestigung V2s, Eckwinkel 100 mm + Kanten: Durchbiegung 0.26 mm bei 0,5 kN/m², erste Eigenfrequenz 79 Hz

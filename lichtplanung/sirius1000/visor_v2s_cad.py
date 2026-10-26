@@ -2,6 +2,8 @@
 CAD der Blende V2s: Die Original-Blende V2 aus der STEP-Datei wird beibehalten, nur die Seitenwangen
 unterhalb der Glasebene werden auf die neue Form (visor_v2s.py) zurückgeschnitten. Stirnblech,
 Lochung und die Wangenteile oberhalb des Glases (Befestigung am Lichtkopf) bleiben unverändert.
+Zur Versteifung werden Seiten- und Unterkante des Stirnblechs unterhalb des Gehäuses 15 mm nach
+hinten gekantet (v2s_final.py: Durchbiegung 0,29 statt 1,13 mm bei V2, Eigenfrequenz 75 statt 40 Hz).
 
     python visor_v2s_cad.py <leuchte.stp> [ordner]
 
@@ -18,7 +20,11 @@ sys.path.insert(0, DATA_DIR)
 from visor_cad import V2_PART, X0, Z_GLASS, prism, replace_visor, write_step  # noqa: E402
 from visor_v2s import A_START, CHEEK_B, V2Sides  # noqa: E402
 
-from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut  # noqa: E402
+from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse  # noqa: E402
+from OCP.BRepBndLib import BRepBndLib  # noqa: E402
+from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox  # noqa: E402
+from OCP.Bnd import Bnd_Box  # noqa: E402
+from OCP.gp import gp_Pnt  # noqa: E402
 from OCP.IFSelect import IFSelect_RetDone  # noqa: E402
 from OCP.STEPCAFControl import STEPCAFControl_Reader  # noqa: E402
 from OCP.TCollection import TCollection_ExtendedString  # noqa: E402
@@ -30,6 +36,10 @@ from OCP.collections import Sequence_TDF_Label as Seq  # noqa: E402
 
 CUT_FROM_H = 1.0      # mm unter der Glasebene: darüber bleibt die Wange als Befestigung
 CUT_TO_A = -100.0     # mm: Ende der Original-Wangen liegt bei -157
+FLANGE = 15.0         # Kantung nach hinten [mm]
+PLATE_HALF_X = 164.0  # Stirnblech quer (END_PLATE b)
+PLATE_BOTTOM = Z_GLASS - 211.0
+FLANGE_TOP = -62.0    # Kantungen nur unterhalb des Gehäuses (Unterkante Lichtkopf Z = -61)
 
 
 def v2_global(step_in):
@@ -71,12 +81,27 @@ def trim(shape, v):
     return shape
 
 
+def add_flanges(shape):
+    box = Bnd_Box()
+    BRepBndLib.Add_s(shape, box)
+    y_rear = box.CornerMin().Y()           # Rückseite des Stirnblechs
+    x0, x1 = X0 - PLATE_HALF_X, X0 + PLATE_HALF_X
+    parts = [BRepPrimAPI_MakeBox(gp_Pnt(x0, y_rear - FLANGE, PLATE_BOTTOM), x1 - x0, FLANGE + 0.5,
+                                 1.5).Shape()]
+    for x in (x0, x1 - 1.5):
+        parts.append(BRepPrimAPI_MakeBox(gp_Pnt(x, y_rear - FLANGE, PLATE_BOTTOM), 1.5, FLANGE + 0.5,
+                                         FLANGE_TOP - PLATE_BOTTOM).Shape())
+    for part in parts:
+        shape = BRepAlgoAPI_Fuse(shape, part).Shape()
+    return shape
+
+
 def main():
     vs = np.load(os.path.join(DATA_DIR, "visor_v2s.npy"))
     v = V2Sides(float(vs[0]), float(vs[1]), float(vs[2]), float(vs[3]))
-    shape = trim(v2_global(sys.argv[1]), v)
+    shape = add_flanges(trim(v2_global(sys.argv[1]), v))
     print(f"V2s: Wangen auf {v.depth * 1000:.0f} mm / {v.front * 1000:.0f} mm, "
-          f"{v.length * 1000:.0f} mm Länge zurückgeschnitten")
+          f"{v.length * 1000:.0f} mm Länge zurückgeschnitten, Kantungen {FLANGE:.0f} mm")
     write_step(shape, os.path.join(DATA_DIR, "blende_v2s.stp"))
     replace_visor(sys.argv[1], shape, "Blende V2s seitlich (berechnet)",
                   os.path.join(DATA_DIR, "sirius1000_blende_v2s.stp"),
