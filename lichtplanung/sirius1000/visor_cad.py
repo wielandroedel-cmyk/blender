@@ -6,7 +6,7 @@ SIRIUS-STEP-Datei und Austausch gegen die Blende V2.
 
 STEP-Koordinaten [mm]: X = 184 + b (quer), Y = a (C0 nach vorn, Stirnblech bei Y = -396),
 Z = -48 - h (Glas bei Z = -48, nach unten negativ). Blech 1,5 mm, Lochraster 12 mm.
-Wangen wie V2 (211 mm am Stirnblech, 89 mm vorn). Stirnblech und Wangen reichen wie bei V2 bis Z = +16 (Befestigung am Lichtkopf).
+Wangen wie V2 (211 mm am Stirnblech, 89 mm vorn). Unterkante und Seitenkanten des Stirnblechs 20 mm nach hinten gekantet (Versteifung). Stirnblech und Wangen reichen wie bei V2 bis Z = +16 (Befestigung am Lichtkopf).
 
 Ausgabe: blende_b3_aussen.stp (nur Blende), sirius1000_blende_b3.stp (Leuchte mit neuer Blende),
 sirius1000_visor_b3.glb (für Blender).
@@ -29,7 +29,8 @@ from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse  # noqa: E402
 from OCP.BRepBuilderAPI import (BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakePolygon,  # noqa: E402
                                 BRepBuilderAPI_Transform)
 from OCP.BRepMesh import BRepMesh_IncrementalMesh  # noqa: E402
-from OCP.BRepPrimAPI import BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakePrism  # noqa: E402
+from OCP.BRepPrimAPI import (BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder,  # noqa: E402
+                             BRepPrimAPI_MakePrism)
 from OCP.IFSelect import IFSelect_RetDone  # noqa: E402
 from OCP.Message import Message_ProgressRange  # noqa: E402
 from OCP.RWGltf import RWGltf_CafWriter  # noqa: E402
@@ -47,6 +48,7 @@ from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Vec  # noqa: E402
 
 X0, Z_GLASS, Z_TOP = 184.0, -48.0, 16.0
 V2_PART = "10166330"
+FLANGE = 20.0  # Kantung zur Versteifung [mm]
 
 
 def prism(points, vec):
@@ -83,6 +85,20 @@ def build(visor):
                 (min(x_out, x_in), y_back + length, z(d_front)),
                 (min(x_out, x_in), y_back - Dc * tb, z(Dc))]
         shape = BRepAlgoAPI_Fuse(shape, prism(prof, (SHEET, 0, 0))).Shape()
+
+    # Versteifung: Unterkante und Seitenkanten des Stirnblechs um FLANGE nach hinten gekantet
+    # (von der Leuchte weg, liegt damit im Schatten des Blechs und ändert die LVK praktisch nicht)
+    if abs(tb) < 1e-9:
+        yb = y_back - SHEET
+        stiff = [BRepPrimAPI_MakeBox(gp_Pnt(X0 - half_w, yb - FLANGE, z(D)),
+                                     2 * half_w, FLANGE + SHEET, SHEET).Shape()]
+        for x0 in (X0 - half_w, X0 + half_w - SHEET):
+            stiff.append(BRepPrimAPI_MakeBox(gp_Pnt(x0, yb - FLANGE, z(D)), SHEET, FLANGE,
+                                             Z_TOP - z(D)).Shape())
+        for part in stiff:
+            shape = BRepAlgoAPI_Fuse(shape, part).Shape()
+    else:
+        print("Kantung nur für senkrechtes Stirnblech modelliert")
 
     # Lochung im Feld wie im Rechenmodell (visor_design.Visor)
     if visor.d_hole is None:
