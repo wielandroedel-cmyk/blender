@@ -133,17 +133,14 @@ def build(visor):
     return cut.Shape(), n
 
 
-def main():
-    step_in = sys.argv[1]
-    vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))
-    visor = Visor(float(vd[0]), float(vd[1]), float(vd[2]), float(vd[5]))
-    shape, n = build(visor)
-    print(f"Blende: Tiefe {visor.D * 1000:.0f} mm, Neigung {math.degrees(visor.beta):+.0f}°, "
-          f"{n} Löcher Ø {visor.d_hole:.2f} mm ({visor.p * 100:.0f} %)")
+def write_step(shape, path):
     w = STEPControl_Writer()
     w.Transfer(shape, STEPControl_AsIs)
-    w.Write(os.path.join(DATA_DIR, "blende_b3_aussen.stp"))
+    w.Write(path)
 
+
+def replace_visor(step_in, shape, part_name, step_out, glb_out):
+    """Blende V2 im Leuchtenmodell durch shape (STEP-Koordinaten) ersetzen, STEP und glTF schreiben."""
     doc = TDocStd_Document(TCollection_ExtendedString("XmlOcaf"))
     reader = STEPCAFControl_Reader()
     reader.SetColorMode(True)
@@ -175,7 +172,7 @@ def main():
         if (lab.FindAttribute(TDataStd_Name.GetID_s(), attr) and
                 V2_PART in attr.Get().ToExtString() and not st.IsAssembly_s(lab)):
             st.SetShape(lab, local)
-            TDataStd_Name.Set_s(lab, TCollection_ExtendedString("Blende B3 aussen (berechnet)"))
+            TDataStd_Name.Set_s(lab, TCollection_ExtendedString(part_name))
             break
     else:
         sys.exit("Blende V2 nicht gefunden")
@@ -185,14 +182,27 @@ def main():
     sw.SetColorMode(True)
     sw.SetNameMode(True)
     sw.Transfer(doc, STEPControl_AsIs)
-    sw.Write(os.path.join(DATA_DIR, "sirius1000_blende_b3.stp"))
+    sw.Write(step_out)
 
     free = Seq()
     st.GetFreeShapes(free)
     for i in range(1, free.Length() + 1):
         BRepMesh_IncrementalMesh(st.GetShape_s(free.Value(i)), 0.3, False, 0.2, True)
-    RWGltf_CafWriter(TCollection_AsciiString(os.path.join(DATA_DIR, "sirius1000_visor_b3.glb")),
-                     True).Perform(doc, FileInfo(), Message_ProgressRange())
+    RWGltf_CafWriter(TCollection_AsciiString(glb_out), True).Perform(doc, FileInfo(),
+                                                                  Message_ProgressRange())
+
+
+def main():
+    step_in = sys.argv[1]
+    vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))
+    visor = Visor(float(vd[0]), float(vd[1]), float(vd[2]), float(vd[5]))
+    shape, n = build(visor)
+    print(f"Blende: Tiefe {visor.D * 1000:.0f} mm, Neigung {math.degrees(visor.beta):+.0f}°, "
+          f"{n} Löcher Ø {visor.d_hole:.2f} mm ({visor.p * 100:.0f} %)")
+    write_step(shape, os.path.join(DATA_DIR, "blende_b3_aussen.stp"))
+    replace_visor(step_in, shape, "Blende B3 aussen (berechnet)",
+                  os.path.join(DATA_DIR, "sirius1000_blende_b3.stp"),
+                  os.path.join(DATA_DIR, "sirius1000_visor_b3.glb"))
 
 
 if __name__ == "__main__":
