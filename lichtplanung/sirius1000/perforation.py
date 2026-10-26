@@ -114,16 +114,20 @@ def visor_transmission(dirs, d, n_pts=24):
     return out
 
 
-def new_lvk(ies_in, ies_out, p_new):
+def lvk_directions(c, g):
+    """Einheitsvektoren aller LVK-Richtungen im System (a, b, h): C0 = +a, C90 = +b,
+    gamma 0 = +h (nach unten). Form (len(c), len(g), 3)."""
+    cc, gg = np.meshgrid(np.radians(c), np.radians(g), indexing="ij")
+    return np.stack([np.sin(gg) * np.cos(cc), np.sin(gg) * np.sin(cc), np.cos(gg)], -1)
+
+
+def free_lvk(ies_in):
+    """Gemessene LVK mit Blende V2 und daraus zurückgerechnete LVK ohne außenliegende Blende.
+    Rückgabe: c, g, gemessene Tabelle, Transmission der Blende V2, Tabelle ohne Blende, Name."""
     c, g, table, flux, name = read_ies(ies_in)
     c, g, table = np.array(c), np.array(g), np.array(table)
-    d_new = d_for_open_area(p_new)
-    cc, gg = np.meshgrid(np.radians(c), np.radians(g), indexing="ij")
-    # Richtung im System (a, b, h): C0 = +a, C90 = +b, gamma 0 = +h (nach unten)
-    dirs = np.stack([np.sin(gg) * np.cos(cc), np.sin(gg) * np.sin(cc), np.cos(gg)], -1)
-    flat = dirs.reshape(-1, 3)
+    flat = lvk_directions(c, g).reshape(-1, 3)
     t_old = visor_transmission(flat, D_OLD).reshape(table.shape)
-    t_new = visor_transmission(flat, d_new).reshape(table.shape)
     # Lichtstärke ohne Blende: aus der Messung zurückgerechnet (I / T_alt). Wo die Blende fast
     # alles verdeckt (T_alt < 0,2), ist das unsicher; dort ist I_frei höchstens der Wert der
     # vorigen gamma-Stufe, abgemindert im selben Verhältnis wie die unverdeckte C0-Seite.
@@ -137,6 +141,14 @@ def new_lvk(ies_in, ies_out, p_new):
         i_free[:, j] = np.where(t_old[:, j] > 0.98, table[:, j],
                                 np.where(t_old[:, j] >= 0.2, back, np.minimum(back, limit)))
     i_free = np.maximum(i_free, table)
+    return c, g, table, t_old, i_free, name
+
+
+def new_lvk(ies_in, ies_out, p_new):
+    c, g, table, t_old, i_free, name = free_lvk(ies_in)
+    d_new = d_for_open_area(p_new)
+    flat = lvk_directions(c, g).reshape(-1, 3)
+    t_new = visor_transmission(flat, d_new).reshape(table.shape)
     i_new = table + i_free * np.maximum(t_new - t_old, 0.0)
     # IES schreiben (gleiches Format wie ldt2ies.write_ies)
     lines = open(ies_in, encoding="latin-1").read().splitlines()

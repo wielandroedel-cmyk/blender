@@ -16,3 +16,7 @@ Vergleich der Lichtverteilungen (SIRIUS 1000, je 111.246 lm)
   5 m: Person I 1905 cd, E_v 21.9 lx, GR 14.0 | Rückwand Ē 3.4 lx, Emax 14.5 lx | Feld 3 Leuchten Ē 1245 lx U0 0.13 | Reihe Ē 1439 lx U0 0.18 -> keine Klasse | Zuschauer GR max 14.5, an x0/y-8 4.9, E_v 34 lx
   8 m: Person I 5383 cd, E_v 37.2 lx, GR 13.7 | Rückwand Ē 6.6 lx, Emax 22.1 lx | Feld 3 Leuchten Ē 902 lx U0 0.45 | Reihe Ē 1179 lx U0 0.69 -> Klasse III | Zuschauer GR max 9.0, an x0/y-8 6.6, E_v 64 lx
 
+=== B3a: neue ext. Blende wie B3 (berechnet)
+  5 m: Person I 902 cd, E_v 10.4 lx, GR 7.0 | Rückwand Ē 4.0 lx, Emax 18.3 lx | Feld 3 Leuchten Ē 1141 lx U0 0.16 | Reihe Ē 1316 lx U0 0.24 -> keine Klasse | Zuschauer GR max 15.7, an x0/y-8 2.7, E_v 35 lx
+  8 m: Person I 7005 cd, E_v 48.4 lx, GR 17.3 | Rückwand Ē 9.2 lx, Emax 30.1 lx | Feld 3 Leuchten Ē 813 lx U0 0.44 | Reihe Ē 1050 lx U0 0.68 -> Klasse III | Zuschauer GR max 9.9, an x0/y-8 9.9, E_v 78 lx
+

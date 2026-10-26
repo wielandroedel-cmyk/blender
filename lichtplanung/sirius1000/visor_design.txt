@@ -1,0 +1,22 @@
+Ausgangslage: V2 heute Fehler 0.464, ohne Blende 0.902
+beste 8 Kombinationen (Fehler, Tendenz, Tiefe, Neigung, Lochanteil):
+  0.342  +0.076  D=0.425 m  beta= +0°  p=10 %
+  0.344  +0.061  D=0.450 m  beta= +0°  p=10 %
+  0.345  +0.047  D=0.475 m  beta= +0°  p=10 %
+  0.346  +0.091  D=0.400 m  beta= +0°  p=10 %
+  0.348  +0.034  D=0.500 m  beta= +0°  p=10 %
+  0.349  +0.097  D=0.500 m  beta=+10°  p=10 %
+  0.351  +0.108  D=0.475 m  beta=+10°  p=10 %
+  0.352  +0.086  D=0.525 m  beta=+10°  p=10 %
+Gewählt: D = 400 mm, Neigung +0°, Lochanteil 10 % (Fehler 0.346, Tendenz +0.091)
+Lichtstrom 105852 lm (V2 111141 lm)
+C180:   gamma |   V2   | neu    | Blende 3
+         45   |  10250 |   7170 |   8009
+         50   |  10381 |   6992 |   5177
+         55   |   8597 |   4581 |   3260
+         60   |   6267 |   2071 |   2430
+         65   |   4658 |    798 |   1858
+         70   |   2238 |    628 |   1386
+         75   |    287 |    575 |    484
+         80   |     48 |    182 |    190
+         85   |      9 |     34 |    124

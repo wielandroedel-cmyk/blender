@@ -127,6 +127,9 @@ def evaluate(lvk, h, behind, eye_height=EYE_HEIGHT, rho=RHO_DEFAULT, eh_mean=Non
     cos_g = math.cos(math.radians(gamma))
     if d_hole is None:  # ohne außenliegende Blende: ganze Lichtaustrittsfläche sichtbar
         eff_len = LUM_LEN_C0
+    elif hasattr(d_hole, "transmission"):  # eigene Blendengeometrie (visor_design.Visor)
+        g = math.radians(gamma)
+        eff_len = LUM_LEN_C0 * float(d_hole.transmission([(-math.sin(g), 0.0, math.cos(g))])[0])
     else:
         visible_len = max(0.0, LUM_LEN_C0 - VISOR_DEPTH * math.tan(math.radians(gamma)))
         tau = float(hole_transmission(d_hole, math.sin(math.radians(gamma))))

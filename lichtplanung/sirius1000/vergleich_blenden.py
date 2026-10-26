@@ -25,6 +25,10 @@ sys.path.insert(0, DATA_DIR)
 import arena  # noqa: E402
 from blendung import LVK, PERSON_DISTANCE, evaluate, floor_eh_mean  # noqa: E402
 from perforation import D_OLD, d_for_open_area  # noqa: E402
+from visor_design import Visor  # noqa: E402
+
+_vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))  # Tiefe, Neigung, Lochanteil, ...
+VISOR_B3 = Visor(float(_vd[0]), float(_vd[1]), float(_vd[2]))
 
 # (Kürzel, Beschriftung, IES, Lochdurchmesser der außenliegenden Blende oder None = keine)
 VARIANTS = [
@@ -32,8 +36,9 @@ VARIANTS = [
     ("V2-50", "Blende V2, Lochung 50 % (geschätzt)", "sirius1000_perf50.ies", d_for_open_area(0.5)),
     ("B2", "ohne ext. Blende – Blende 2", "sirius1000_b2.ies", None),
     ("B3", "ohne ext. Blende – Blende 3", "sirius1000_b3.ies", None),
+    ("B3a", "neue ext. Blende wie B3 (berechnet)", "sirius1000_visor_b3.ies", VISOR_B3),
 ]
-COLORS = {"V2": "#17202b", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46"}
+COLORS = {"V2": "#17202b", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46", "B3a": "#7a4fb0"}
 HEIGHTS = [5.0, 8.0]
 WALL_Y, WALL_W = -10.0, 12.0
 
@@ -187,7 +192,7 @@ def plot_person(results):
     ax.grid(alpha=0.3)
     ax.legend(fontsize=8)
     fig.suptitle("Person 8 m hinter der Leuchte und Rückwand – V2 = Blende heute, V2-50 = Lochung 50 %, "
-                 "B2/B3 = ohne externe Blende", fontsize=12)
+                 "B2/B3 = ohne externe Blende, B3a = neue ext. Blende", fontsize=12)
     fig.tight_layout()
     fig.savefig(os.path.join(DATA_DIR, "vergleich_person.png"), bbox_inches="tight")
     plt.close(fig)
@@ -201,7 +206,7 @@ def plot_wall(results):
             "#a9dd5c", "#e6e04c", "#f6b440", "#ef7d34", "#d9442c", "#b51f5a"]
     cmap = ListedColormap(cols)
     norm = BoundaryNorm(levels, cmap.N)
-    fig, axes = plt.subplots(2, 4, figsize=(18, 8.6), dpi=120)
+    fig, axes = plt.subplots(2, len(VARIANTS), figsize=(4.5 * len(VARIANTS), 8.6), dpi=120)
     for r, h in enumerate(HEIGHTS):
         for c, (key, label, _, _) in enumerate(VARIANTS):
             ax = axes[r, c]
@@ -221,7 +226,7 @@ def plot_wall(results):
     cb.set_label("E_v [lx], Direktlicht")
     fig.suptitle("Rückwand 10 m hinter der Leuchte (2 m hinter der Person) – vertikale "
                  "Beleuchtungsstärke\nV2 = Blende heute · V2-50 = Lochung 50 % (geschätzt) · "
-                 "B2 / B3 = ohne externe Blende · je 111.246 lm", fontsize=12)
+                 "B2 / B3 = ohne externe Blende · B3a = neue ext. Blende · je 111.246 lm", fontsize=12)
     fig.savefig(os.path.join(DATA_DIR, "vergleich_rueckwand.png"), bbox_inches="tight")
     plt.close(fig)
 
@@ -234,7 +239,7 @@ def plot_arena(results):
                  "#d2e778", "#f4e36b", "#f6b84c", "#ef8a3a", "#d9542a", "#a8231f"]
     cmap = ListedColormap(gr_colors)
     norm = BoundaryNorm(gr_levels, cmap.N)
-    fig, axes = plt.subplots(2, 4, figsize=(18, 8.8), dpi=120, sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, len(VARIANTS), figsize=(4.5 * len(VARIANTS), 8.8), dpi=120, sharex=True, sharey=True)
     for r, h in enumerate(HEIGHTS):
         for c, (key, label, _, _) in enumerate(VARIANTS):
             ax = axes[r, c]
@@ -260,7 +265,7 @@ def plot_arena(results):
     cb.set_label("Glare Rating GR (CIE 112)")
     fig.suptitle("Arena: Blendung der Zuschauer und Feldbeleuchtung – 3 × SIRIUS 1000 im Abstand "
                  "von 6 m, Wartungsfaktor 0,8\nV2 = Blende heute · V2-50 = Lochung 50 % · "
-                 "B2 / B3 = ohne externe Blende · GR-Skala: 10 unmerklich · 30 merklich · 50 störend",
+                 "B2 / B3 = ohne externe Blende · B3a = neue ext. Blende · GR-Skala: 10 unmerklich · 30 merklich · 50 störend",
                  fontsize=12)
     fig.savefig(os.path.join(DATA_DIR, "vergleich_arena.png"), bbox_inches="tight")
     plt.close(fig)
