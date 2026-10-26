@@ -27,23 +27,27 @@ from blendung import LVK, PERSON_DISTANCE, evaluate, floor_eh_mean  # noqa: E402
 from perforation import D_OLD, d_for_open_area  # noqa: E402
 from visor_design import Visor  # noqa: E402
 from visor_mini import CompactVisor  # noqa: E402
+from visor_v2s import V2Sides  # noqa: E402
 
 _vd = np.load(os.path.join(DATA_DIR, "visor_design.npy"))  # Tiefe, Neigung, Lochanteil, ...
 VISOR_B3 = Visor(float(_vd[0]), float(_vd[1]), float(_vd[2]), float(_vd[5]))
 _vm = np.load(os.path.join(DATA_DIR, "visor_mini.npy"))  # Tiefe, Lamellen, Neigung, Loch, Wangen
 VISOR_B3K = CompactVisor(float(_vm[0]), int(_vm[1]), float(_vm[2]), float(_vm[3]),
                          ("kurz", "lang", "keine")[int(_vm[4])])
+_vs = np.load(os.path.join(DATA_DIR, "visor_v2s.npy"))  # Wangen: Tiefe, vorn, Länge, Lochung
+VISOR_V2S = V2Sides(float(_vs[0]), float(_vs[1]), float(_vs[2]), float(_vs[3]))
 
 # (Kürzel, Beschriftung, IES, Lochdurchmesser der außenliegenden Blende oder None = keine)
 VARIANTS = [
     ("V2", "Blende V2, Lochung 3,4 %", "sirius1000.ies", D_OLD),
+    ("V2s", "Blende V2, Wangen 60/80 mm (berechnet)", "sirius1000_v2s.ies", VISOR_V2S),
     ("V2-50", "Blende V2, Lochung 50 % (geschätzt)", "sirius1000_perf50.ies", d_for_open_area(0.5)),
     ("B2", "ohne ext. Blende – Blende 2", "sirius1000_b2.ies", None),
     ("B3", "ohne ext. Blende – Blende 3", "sirius1000_b3.ies", None),
     ("B3a", "neue ext. Blende wie B3 (berechnet)", "sirius1000_visor_b3.ies", VISOR_B3),
     ("B3k", "kompakte ext. Blende mit Lamelle (berechnet)", "sirius1000_visor_b3k.ies", VISOR_B3K),
 ]
-COLORS = {"V2": "#17202b", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46", "B3a": "#7a4fb0", "B3k": "#c0392b"}
+COLORS = {"V2": "#17202b", "V2s": "#5b6673", "V2-50": "#a35a00", "B2": "#0b5cad", "B3": "#2f9a46", "B3a": "#7a4fb0", "B3k": "#c0392b"}
 HEIGHTS = [5.0, 8.0]
 WALL_Y, WALL_W = -10.0, 12.0
 

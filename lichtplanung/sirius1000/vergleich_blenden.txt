@@ -4,6 +4,10 @@ Vergleich der Lichtverteilungen (SIRIUS 1000, je 111.246 lm)
   5 m: Person I 4789 cd, E_v 55.1 lx, GR 24.0 | Rückwand Ē 7.1 lx, Emax 36.8 lx | Feld 3 Leuchten Ē 1166 lx U0 0.16 | Reihe Ē 1349 lx U0 0.24 -> keine Klasse | Zuschauer GR max 19.2, an x0/y-8 14.6, E_v 76 lx
   8 m: Person I 10371 cd, E_v 71.7 lx, GR 21.0 | Rückwand Ē 16.0 lx, Emax 47.4 lx | Feld 3 Leuchten Ē 832 lx U0 0.46 | Reihe Ē 1080 lx U0 0.70 -> Klasse I | Zuschauer GR max 13.5, an x0/y-8 13.2, E_v 107 lx
 
+=== V2s: Blende V2, Wangen 60/80 mm (berechnet)
+  5 m: Person I 4789 cd, E_v 55.1 lx, GR 23.5 | Rückwand Ē 8.7 lx, Emax 40.1 lx | Feld 3 Leuchten Ē 1221 lx U0 0.16 | Reihe Ē 1425 lx U0 0.24 -> keine Klasse | Zuschauer GR max 19.1, an x0/y-8 14.8, E_v 88 lx
+  8 m: Person I 10371 cd, E_v 71.7 lx, GR 20.6 | Rückwand Ē 18.2 lx, Emax 48.3 lx | Feld 3 Leuchten Ē 869 lx U0 0.47 | Reihe Ē 1142 lx U0 0.70 -> Klasse I | Zuschauer GR max 14.1, an x0/y-8 13.4, E_v 116 lx
+
 === V2-50: Blende V2, Lochung 50 % (geschätzt)
   5 m: Person I 6409 cd, E_v 73.8 lx, GR 26.8 | Rückwand Ē 10.4 lx, Emax 48.4 lx | Feld 3 Leuchten Ē 1177 lx U0 0.16 | Reihe Ē 1364 lx U0 0.24 -> keine Klasse | Zuschauer GR max 20.3, an x0/y-8 17.3, E_v 99 lx
   8 m: Person I 11647 cd, E_v 80.5 lx, GR 22.1 | Rückwand Ē 20.3 lx, Emax 53.9 lx | Feld 3 Leuchten Ē 839 lx U0 0.46 | Reihe Ē 1094 lx U0 0.70 -> Klasse I | Zuschauer GR max 14.8, an x0/y-8 14.4, E_v 121 lx

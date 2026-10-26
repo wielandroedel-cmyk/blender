@@ -29,7 +29,7 @@ pres.subject = "Vergleich Blende wie geliefert (Lochung 3,4 %) und Lochung 50 %"
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 const C = pres.SchemeColor;
 
-const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. C · 26.10.2026 · Entwurf zur Prüfung";
+const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. D · 26.10.2026 · Entwurf zur Prüfung";
 
 // ---------------------------------------------------------------- Layouts
 pres.defineSlideMaster({
@@ -793,6 +793,64 @@ pres.addSection({ title: "Kompakte Blende" });
     "erreicht U0 0,70; schon V2 liegt bei 0,699.");
 }
 
+// ================================================================= V2 seitlich überarbeitet
+pres.addSection({ title: "V2 seitlich überarbeitet" });
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · AUSLEGUNG",
+    "Kleinere Seitenwangen holen 6,6 % Lichtstrom zurück");
+  s.addText("V2 heute: Wangen 211 → 89 mm, 237 mm lang", { x: 0.6, y: 1.8, w: 4.4, h: 0.3,
+    fontSize: 11, bold: true, color: C.text2, margin: 0, isTextBox: true, objectName: "V2 Seite Titel" });
+  s.addImage({ path: IMG("ansicht_v2_seite.png"), x: 0.6, y: 2.1, w: 4.4, h: 2.048,
+    altText: "Seitenansicht mit Blende V2", objectName: "V2 Seite Bild" });
+  s.addText("V2s: Eckwinkel 60 mm, 80 mm lang", { x: 0.6, y: 4.3, w: 4.4, h: 0.3, fontSize: 11,
+    bold: true, color: C.accent1, margin: 0, isTextBox: true, objectName: "V2s Seite Titel" });
+  s.addImage({ path: IMG("ansicht_v2s_seite.png"), x: 0.6, y: 4.6, w: 4.4, h: 2.044,
+    altText: "Seitenansicht mit Blende V2s", objectName: "V2s Seite Bild" });
+  const lab = D.gamma.slice(0, 21).map(String);
+  s.addChart(pres.charts.LINE, [
+    { name: "V2 heute", labels: lab, values: D.c90_v2.slice(0, 21) },
+    { name: "V2s", labels: lab, values: D.c90_v2s.slice(0, 21) },
+  ], {
+    x: 5.3, y: 1.8, w: 4.35, h: 4.9, ...CHART_TEXT,
+    chartColors: [HEX.dk1, HEX.accent1], lineSize: 2, lineDataSymbol: "none",
+    showLegend: true, legendPos: "b", showTitle: true, title: "Lichtstärke zur Seite (C90) [cd]",
+    showCatAxisTitle: true, catAxisTitle: "γ [°]", catAxisLabelFrequency: 2,
+    valAxisLabelFormatCode: "#,##0", objectName: "V2s C90",
+  });
+  kpi(s, 9.95, 1.85, 2.75, 1.45, "+6,6 %", "Lichtstrom, mehr Licht auf dem Feld", "V2s Lichtstrom", C.accent1);
+  kpi(s, 9.95, 3.45, 2.75, 1.45, "+10 %", "Licht zur Seite (C45–135, C225–315)", "V2s Seite");
+  kpi(s, 9.95, 5.05, 2.75, 1.45, "23,5", "GR der Person bei 5 m (V2: 24,0)", "V2s GR");
+  s.addNotes("visor_v2s.py: Stirnblech und Lochung bleiben wie V2, untersucht wurden Tiefe, Länge, Form " +
+    "und Lochung der Wangen (97 Varianten). Die unveränderte V2 gibt die gemessene LVK exakt wieder. " +
+    "CAD: Original-Blende aus der STEP-Datei, Wangen unter der Glasebene zurückgeschnitten (blende_v2s.stp).");
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2s · BEWERTUNG",
+    "Mehr Licht zur Seite, Blendung und Klasse I bleiben");
+  const win = (t) => cell(t, { bold: true, color: C.accent1 });
+  const rows = [
+    [head("KRITERIUM"), head("V2 HEUTE"), head("V2s"), head("OHNE WANGEN")],
+    [cell("Lichtstrom"), cell("111.141 lm"), win("118.526 lm (+6,6 %)"), cell("+7,1 %")],
+    [cell("Licht zur Seite"), cell("49.805 lm"), win("+10,4 %"), cell("+11,2 %")],
+    [cell("Blendung Person, GR 5 m / 8 m"), cell("24,0 / 21,0"), win("23,5 / 20,6"), cell("23,5 / 20,6")],
+    [cell("Blendung Zuschauer, GR max 8 m"), win("13,5"), cell("14,1"), cell("14,2")],
+    [cell("Aufhellung Rückwand, Ē 5 m / 8 m"), win("7,1 / 16,0 lx"), cell("8,7 / 18,2 lx"), cell("–")],
+    [cell("Arena-Reihe 8 m, Ē / U0"), cell("1.080 lx / 0,70"), win("1.142 lx / 0,70"), cell("1.146 lx / 0,70")],
+    [cell("Klasse EN 12193 (8 m)"), cell("Klasse I"), win("Klasse I"), cell("Klasse I")],
+  ];
+  s.addTable(rows, tableOpts(0.6, 1.8, 12.1, [3.6, 2.6, 3.1, 2.8], { fontSize: 12 }));
+  s.addText([
+    { text: "Warum es wirkt: ", options: { bold: true, color: C.accent1 } },
+    { text: "Die Wangen der V2 stehen quer zur seitlichen Ausstrahlung und fangen dort Licht ab, ohne die " +
+      "Person hinter der Leuchte zu schützen. Ein 60 mm hoher Eckwinkel hält das Stirnblech und holt 94 % " +
+      "dessen, was ganz ohne Wangen möglich wäre. Die Zuschauer sehen 0,6 GR mehr, die Rückwand wird etwas " +
+      "heller. Vor der Freigabe ein Muster vermessen." },
+  ], { x: 0.6, y: 5.25, w: 12.1, h: 1.3, fontSize: 14, color: C.text1, margin: 0, valign: "top",
+    isTextBox: true, objectName: "V2s Einordnung" });
+  s.addNotes("Werte aus visor_v2s.txt und vergleich_blenden.txt; alle Varianten bei der gemessenen Optik " +
+    "der V2. U0 0,697 (V2s) und 0,699 (V2) runden beide auf 0,70.");
+}
+
 // ================================================================= 13 Annahmen
 pres.addSection({ title: "Anhang" });
 {
@@ -816,7 +874,7 @@ pres.addSection({ title: "Anhang" });
       "Zuschauer in Augenhöhe 1,2 m (keine ansteigende Tribüne)", options: { bullet: true, breakLine: true } },
     { text: "Blende 2/3: relative LDT (4000 K, CRI 70), auf 111.246 lm gesetzt und um 90° gedreht; " +
       "Vergleich bei gleichem Lichtstrom", options: { bullet: true, breakLine: true } },
-    { text: "B3a/B3k: Blende und LVK berechnet (Strahlenmodell, Innenseite matt schwarz), nicht gemessen",
+    { text: "B3a/B3k/V2s: Blende und LVK berechnet (Strahlenmodell, Innenseite matt schwarz), nicht gemessen",
       options: { bullet: true } },
   ], { x: 0.6, y: 1.85, w: 12.1, h: 4.9, fontSize: 16, color: C.text1, margin: 0, valign: "top",
     paraSpaceAfter: 6, isTextBox: true, objectName: "Annahmen Liste" });

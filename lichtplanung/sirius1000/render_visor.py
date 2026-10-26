@@ -2,7 +2,7 @@
 Ansicht der Leuchte mit Blende V2 und mit der neuen Blende (Cycles-Renderings für die
 Präsentation).
 
-    python render_visor.py [v2|b3a|b3k ...] [ordner]
+    python render_visor.py [v2|b3a|b3k|v2s ...] [ordner]
 """
 
 import math
@@ -69,6 +69,7 @@ def render(glb, tag):
         bpy.ops.render.render(write_still=True)
 
 
-MODELS = {"v2": "sirius1000.glb", "b3a": "sirius1000_visor_b3.glb", "b3k": "sirius1000_visor_b3k.glb"}
+MODELS = {"v2": "sirius1000.glb", "b3a": "sirius1000_visor_b3.glb", "b3k": "sirius1000_visor_b3k.glb",
+          "v2s": "sirius1000_v2s.glb"}
 for tag in [a for a in sys.argv[1:] if a in MODELS] or list(MODELS):
     render(MODELS[tag], tag)
