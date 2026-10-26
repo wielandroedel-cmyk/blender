@@ -1,6 +1,7 @@
 """Convert an EULUMDAT (.ldt) file to IESNA LM-63-2002 (.ies) for Cycles.
 
     python ldt2ies.py eingabe.ldt ausgabe.ies [modulfaktor] [name]
+    python ldt2ies.py eingabe.ldt ausgabe.ies --lumen 111246 --drehen 90 --name SIRIUS_1000_B2
 
 Der optionale Modulfaktor skaliert Lichtstrom, Leistung und Länge der Lichtaustrittsfläche,
 z. B. 0.5 für ein Modul (SIRIUS 1000) aus der LDT einer Leuchte mit zwei Modulen
@@ -81,6 +82,25 @@ def scale_modules(d, factor, name=None):
     return d
 
 
+def set_flux(d, lumen, watt=None):
+    """Relative LDT (z. B. Lichtstrom 1 lm) auf einen absoluten Lichtstrom setzen."""
+    for s in d["sets"]:
+        s["flux"] = lumen / s["n"]
+        if watt is not None:
+            s["watt"] = watt
+    return d
+
+
+def rotate_c(d, degrees):
+    """C-Ebenen drehen: neue Ebene C' entspricht der alten Ebene C' + degrees.
+    Mit degrees = 90 wird ein Hauptstrahl bei C90 auf C0 gelegt."""
+    steps = int(round(degrees / d["dc"]))
+    mc = d["mc"]
+    d["full"] = {ci: d["full"][(ci + steps) % mc] for ci in range(mc)}
+    d["rotated"] = degrees
+    return d
+
+
 def write_ies(d, path):
     flux = sum(s["flux"] * s["n"] for s in d["sets"])
     scale = flux / 1000.0 * d["cfac"]  # cd/klm -> cd
@@ -94,7 +114,8 @@ def write_ies(d, path):
         f"[LAMP] {d['sets'][0]['type']} {d['sets'][0]['cct']} {d['sets'][0]['cri']}",
         "[OTHER] Converted from EULUMDAT"
         + (f", module factor {d['module_factor']:g} applied to flux, power and length"
-           if d.get("module_factor", 1) != 1 else ""),
+           if d.get("module_factor", 1) != 1 else "")
+        + (f", C planes rotated by {d['rotated']:g} deg" if d.get("rotated") else ""),
         "TILT=NONE",
         # lamps, lumens/lamp, multiplier, n vert, n horiz, photometric type C,
         # units meters, width, length, height (luminous opening)
@@ -127,11 +148,31 @@ def read_ies(path):
     return c, gamma, table, lamps * lumens, name
 
 
+def _option(args, name, default=None):
+    if name in args:
+        i = args.index(name)
+        value = args[i + 1]
+        del args[i:i + 2]
+        return value
+    return default
+
+
 if __name__ == "__main__":
-    d = read_ldt(sys.argv[1])
-    if len(sys.argv) > 3:
-        scale_modules(d, float(sys.argv[3]), sys.argv[4] if len(sys.argv) > 4 else None)
-    write_ies(d, sys.argv[2])
+    args = sys.argv[1:]
+    lumen = _option(args, "--lumen")
+    watt = _option(args, "--watt")
+    turn = _option(args, "--drehen")
+    name = _option(args, "--name")
+    d = read_ldt(args[0])
+    if len(args) > 2:
+        scale_modules(d, float(args[2]), args[3] if len(args) > 3 else None)
+    if lumen:
+        set_flux(d, float(lumen), float(watt) if watt else None)
+    if turn:
+        rotate_c(d, float(turn))
+    if name:
+        d["name"] = name
+    write_ies(d, args[1])
     peak = max((max(r), d["c"][ci], d["gamma"][r.index(max(r))]) for ci, r in d["full"].items())
     flux = sum(s["flux"] * s["n"] for s in d["sets"])
     print(f"{d['name']}: {flux:.0f} lm, peak {peak[0]:.1f} cd/klm = {peak[0]*flux/1000:.0f} cd "

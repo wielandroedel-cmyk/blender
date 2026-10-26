@@ -125,9 +125,12 @@ def evaluate(lvk, h, behind, eye_height=EYE_HEIGHT, rho=RHO_DEFAULT, eh_mean=Non
     # Lochung des Stirnblechs ist zusätzlich ein Teil des verdeckten Glases zu sehen.
     a = LUM_LEN_C0 * LUM_WID_C90
     cos_g = math.cos(math.radians(gamma))
-    visible_len = max(0.0, LUM_LEN_C0 - VISOR_DEPTH * math.tan(math.radians(gamma)))
-    tau = float(hole_transmission(d_hole, math.sin(math.radians(gamma))))
-    eff_len = visible_len + (LUM_LEN_C0 - visible_len) * tau
+    if d_hole is None:  # ohne außenliegende Blende: ganze Lichtaustrittsfläche sichtbar
+        eff_len = LUM_LEN_C0
+    else:
+        visible_len = max(0.0, LUM_LEN_C0 - VISOR_DEPTH * math.tan(math.radians(gamma)))
+        tau = float(hole_transmission(d_hole, math.sin(math.radians(gamma))))
+        eff_len = visible_len + (LUM_LEN_C0 - visible_len) * tau
     l_mean = intensity / (a * cos_g)
     l_visible = intensity / (eff_len * LUM_WID_C90 * cos_g) if eff_len > 0 else 0.0
     omega = eff_len * LUM_WID_C90 * cos_g / d ** 2

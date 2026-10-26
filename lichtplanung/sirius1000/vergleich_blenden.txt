@@ -1,0 +1,18 @@
+Vergleich der Lichtverteilungen (SIRIUS 1000, je 111.246 lm)
+
+=== V2: Blende V2, Lochung 3,4 %
+  5 m: Person I 4789 cd, E_v 55.1 lx, GR 24.0 | Rückwand Ē 7.1 lx, Emax 36.8 lx | Feld 3 Leuchten Ē 1166 lx U0 0.16 | Reihe Ē 1349 lx U0 0.24 -> keine Klasse | Zuschauer GR max 19.2, an x0/y-8 14.6, E_v 76 lx
+  8 m: Person I 10371 cd, E_v 71.7 lx, GR 21.0 | Rückwand Ē 16.0 lx, Emax 47.4 lx | Feld 3 Leuchten Ē 832 lx U0 0.46 | Reihe Ē 1080 lx U0 0.70 -> Klasse I | Zuschauer GR max 13.5, an x0/y-8 13.2, E_v 107 lx
+
+=== V2-50: Blende V2, Lochung 50 % (geschätzt)
+  5 m: Person I 6409 cd, E_v 73.8 lx, GR 26.8 | Rückwand Ē 10.4 lx, Emax 48.4 lx | Feld 3 Leuchten Ē 1177 lx U0 0.16 | Reihe Ē 1364 lx U0 0.24 -> keine Klasse | Zuschauer GR max 20.3, an x0/y-8 17.3, E_v 99 lx
+  8 m: Person I 11647 cd, E_v 80.5 lx, GR 22.1 | Rückwand Ē 20.3 lx, Emax 53.9 lx | Feld 3 Leuchten Ē 839 lx U0 0.46 | Reihe Ē 1094 lx U0 0.70 -> Klasse I | Zuschauer GR max 14.8, an x0/y-8 14.4, E_v 121 lx
+
+=== B2: ohne ext. Blende – Blende 2
+  5 m: Person I 1290 cd, E_v 14.9 lx, GR 9.8 | Rückwand Ē 2.5 lx, Emax 10.6 lx | Feld 3 Leuchten Ē 1280 lx U0 0.09 | Reihe Ē 1473 lx U0 0.14 -> keine Klasse | Zuschauer GR max 13.8, an x0/y-8 1.2, E_v 26 lx
+  8 m: Person I 4874 cd, E_v 33.7 lx, GR 12.4 | Rückwand Ē 5.3 lx, Emax 20.1 lx | Feld 3 Leuchten Ē 947 lx U0 0.44 | Reihe Ē 1235 lx U0 0.64 -> Klasse III | Zuschauer GR max 6.9, an x0/y-8 4.3, E_v 51 lx
+
+=== B3: ohne ext. Blende – Blende 3
+  5 m: Person I 1905 cd, E_v 21.9 lx, GR 14.0 | Rückwand Ē 3.4 lx, Emax 14.5 lx | Feld 3 Leuchten Ē 1245 lx U0 0.13 | Reihe Ē 1439 lx U0 0.18 -> keine Klasse | Zuschauer GR max 14.5, an x0/y-8 4.9, E_v 34 lx
+  8 m: Person I 5383 cd, E_v 37.2 lx, GR 13.7 | Rückwand Ē 6.6 lx, Emax 22.1 lx | Feld 3 Leuchten Ē 902 lx U0 0.45 | Reihe Ē 1179 lx U0 0.69 -> Klasse III | Zuschauer GR max 9.0, an x0/y-8 6.6, E_v 64 lx
+
