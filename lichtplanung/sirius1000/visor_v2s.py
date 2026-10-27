@@ -71,36 +71,40 @@ class V2Sides:
         pa, pb = np.meshgrid(ga, gb)
         pa, pb = pa.ravel(), pb.ravel()
         out = np.zeros(len(dirs))
-        a_end = A_START + self.length
         for k, (da, db, dh) in enumerate(dirs):
             if dh <= 1e-6:
                 out[k] = 1.0
                 continue
-            t = np.ones_like(pa)
-            # Stirnblech wie V2
-            if da < -1e-9:
-                s = (END_PLATE["a"] - pa) / da
-                hb, hh = pb + s * db, s * dh
-                hit = ((s > 0) & (hb >= END_PLATE["b"][0]) & (hb <= END_PLATE["b"][1]) &
-                       (hh >= END_PLATE["h"][0]) & (hh <= END_PLATE["h"][1]))
-                field = ((hb >= END_PLATE["field_b"][0]) & (hb <= END_PLATE["field_b"][1]) &
-                         (hh >= END_PLATE["field_h"][0]) & (hh <= END_PLATE["field_h"][1]))
-                tau_p = hole_tr(self.plate_d, self.plate_pitch, da) if self.plate_d > 0 else 0.0
-                t = t * np.where(hit, np.where(field, tau_p, 0.0), 1.0)
-            # Wangen
-            if self.depth > 0 and abs(db) > 1e-9:
-                tau = 0.0 if self.d_hole is None else hole_transmission(self.d_hole, db)
-                for b0 in (-CHEEK_B, CHEEK_B):
-                    s = (b0 - pb) / db
-                    ha, hh = pa + s * da, s * dh
-                    dep = self.cheek_depth(ha)
-                    hit = (s > 0) & (ha >= A_START) & (ha <= a_end) & (hh >= 0.0) & (hh <= dep)
-                    field = ((ha >= CHEEK_FIELD_A[0]) & (ha <= a_end - 0.0225) &
-                             (hh >= CHEEK_FIELD_H[0]) & (hh <= CHEEK_FIELD_H[1]) &
-                             (hh <= dep - 0.006))
-                    t = t * np.where(hit, np.where(field, tau, 0.0), 1.0)
-            out[k] = t.mean()
+            out[k] = self._shade(pa, pb, da, db, dh).mean()
         return out
+
+    def _shade(self, pa, pb, da, db, dh):
+        """Transmission je Startpunkt auf dem Glas für eine Richtung (da, db, dh)."""
+        a_end = A_START + self.length
+        t = np.ones_like(pa)
+        # Stirnblech wie V2
+        if da < -1e-9:
+            s = (END_PLATE["a"] - pa) / da
+            hb, hh = pb + s * db, s * dh
+            hit = ((s > 0) & (hb >= END_PLATE["b"][0]) & (hb <= END_PLATE["b"][1]) &
+                   (hh >= END_PLATE["h"][0]) & (hh <= END_PLATE["h"][1]))
+            field = ((hb >= END_PLATE["field_b"][0]) & (hb <= END_PLATE["field_b"][1]) &
+                     (hh >= END_PLATE["field_h"][0]) & (hh <= END_PLATE["field_h"][1]))
+            tau_p = hole_tr(self.plate_d, self.plate_pitch, da) if self.plate_d > 0 else 0.0
+            t = t * np.where(hit, np.where(field, tau_p, 0.0), 1.0)
+        # Wangen
+        if self.depth > 0 and abs(db) > 1e-9:
+            tau = 0.0 if self.d_hole is None else hole_transmission(self.d_hole, db)
+            for b0 in (-CHEEK_B, CHEEK_B):
+                s = (b0 - pb) / db
+                ha, hh = pa + s * da, s * dh
+                dep = self.cheek_depth(ha)
+                hit = (s > 0) & (ha >= A_START) & (ha <= a_end) & (hh >= 0.0) & (hh <= dep)
+                field = ((ha >= CHEEK_FIELD_A[0]) & (ha <= a_end - 0.0225) &
+                         (hh >= CHEEK_FIELD_H[0]) & (hh <= CHEEK_FIELD_H[1]) &
+                         (hh <= dep - 0.006))
+                t = t * np.where(hit, np.where(field, tau, 0.0), 1.0)
+        return t
 
 
 def lvk_obj(c, g, table):

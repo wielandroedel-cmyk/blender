@@ -29,7 +29,7 @@ pres.subject = "Vergleich Blende wie geliefert (Lochung 3,4 %) und Lochung 50 %"
 pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
 const C = pres.SchemeColor;
 
-const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. F · 26.10.2026 · Entwurf zur Prüfung";
+const FOOT = "Siteco SIRIUS 1000 · Blendungsbewertung außenliegende Blende · Rev. G · 27.10.2026 · Entwurf zur Prüfung";
 
 // ---------------------------------------------------------------- Layouts
 pres.defineSlideMaster({
@@ -940,6 +940,44 @@ pres.addSection({ title: "V2 seitlich überarbeitet" });
     "(LM-63). Werte berechnet aus der gemessenen V2-LVK, nicht gemessen.", { x: 9.2, y: 5.1, w: 3.5,
     h: 1.5, fontSize: 11, color: C.text2, margin: 0, valign: "top", isTextBox: true,
     objectName: "V2s LVK Dateien" });
+}
+
+{
+  const s = content("V2 seitlich überarbeitet", "V2f · SEITLICHE FLÜGEL",
+    "Schräge Flügel statt 90°-Wangen: 35° gebogen, 100 mm lang");
+  s.addImage({ path: IMG("ansicht_v2f_vorn.png"), x: 0.6, y: 1.85, w: 3.5, h: 3.152,
+    altText: "V2f von vorn unten mit seitlichen Flügeln", objectName: "V2f vorn" });
+  s.addImage({ path: IMG("ansicht_v2f_unten.png"), x: 4.35, y: 1.85, w: 2.17, h: 3.152,
+    altText: "V2f von unten", objectName: "V2f unten" });
+  s.addText("Von vorn unten und von unten: Flügel spreizen außerhalb des Glases nach vorn-außen",
+    { x: 0.6, y: 5.1, w: 5.9, h: 0.5, fontSize: 10, color: C.text2, margin: 0, valign: "top",
+      isTextBox: true, objectName: "V2f Bildtext" });
+  numberedBlock(s, 6.9, 1.85, 5.8, "1", "Form",
+    "An den Seitenkanten des Stirnblechs 35° gegen die Blechebene nach vorn-außen gebogen, 100 × 211 mm, " +
+    "gelocht wie das Stirnblech. Ersetzen die seitlichen Kantungen; die Unterkante bleibt gekantet.", "V2f 1");
+  numberedBlock(s, 6.9, 3.55, 5.8, "2", "Wirkung",
+    "Die Flügel liegen außerhalb des Glases und fangen das Licht schräg nach hinten ab, " +
+    "das zur Seite geht kaum.", "V2f 2");
+  numberedBlock(s, 6.9, 5.1, 5.8, "3", "Auswahl",
+    "180 Varianten (20–90°, 40–140 mm, 100–211 mm tief, Rechteck bis Dreieck): bestes Ergebnis bei " +
+    "höchstens 1,5 % Lichtverlust gegenüber V2s.", "V2f 3");
+  s.addNotes("visor_v2f.py (Studie), visor_v2f_cad.py (CAD blende_v2f.stp). Die Flügel stehen 57 mm vor dem " +
+    "Stirnblech vor und versteifen die Seitenkanten mindestens so gut wie die 15-mm-Kantungen.");
+}
+{
+  const s = content("V2 seitlich überarbeitet", "V2f · BEWERTUNG",
+    "V2f schirmt besser ab als V2 und hat 5 % mehr Licht");
+  s.addImage({ path: IMG("visor_v2f.png"), x: 0.6, y: 1.75, w: 12.1, h: 3.81,
+    altText: "Flügelvarianten, Lichtstärke schräg nach hinten und Draufsicht", objectName: "V2f Studie" });
+  const win = (t) => cell(t, { bold: true, color: C.accent1 });
+  const rows = [
+    [head(""), head("LICHTSTROM"), head("SCHRÄG HINTEN"), head("GR PERSON 5/8 m"), head("GR ZUSCHAUER"),
+     head("RÜCKWAND 5/8 m"), head("REIHE 8 m")],
+    [cell("V2 heute"), cell("111.141 lm"), win("6.074 lm"), cell("24,0 / 21,0"), cell("13,5"), cell("7,1 / 16,0 lx"), cell("Klasse I")],
+    [cell("V2s"), win("118.526 lm"), cell("7.195 lm"), win("23,5 / 20,6"), cell("14,1"), cell("8,7 / 18,2 lx"), cell("Klasse I")],
+    [cell("V2f (Flügel)", { bold: true }), cell("117.152 lm"), cell("6.474 lm"), cell("23,6 / 20,7"), win("13,1"), win("6,4 / 15,4 lx"), win("Klasse I")],
+  ];
+  s.addTable(rows, tableOpts(0.6, 5.65, 12.1, [1.7, 1.6, 1.7, 2.0, 1.6, 1.9, 1.6], { fontSize: 11 }));
 }
 
 // ================================================================= Kiemenblende
