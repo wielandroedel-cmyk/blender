@@ -52,22 +52,32 @@ KI18;Knick Innenring;730.3;740.1;;
 KI19;Knick Innenring;798.7;676.6;KI19;0,00
 KI20;Knick Innenring;883.8;641.4;;
 Q1-L;T-Stoß Querträger/Innenring;716.2;778.7;Q1-L;0,00
-Q1-R;T-Stoß Querträger/Innenring;1130.3;778.7;;
+Q1-R;T-Stoß Querträger/Innenring;1130.3;778.7;Q1-M;14,60
 Q3-R;T-Stoß Querträger/Innenring;1164.2;1158.3;Q3-R;0,00
 Q3-L;T-Stoß Querträger/Innenring;680.8;1159.3;Q3-M;17,04
 Q4-R;T-Stoß Querträger/Innenring;1164.7;1252.6;Q4-M;17,08
 Q4-L;T-Stoß Querträger/Innenring;680.8;1253.5;Q4-L;0,00
 Q5-L;T-Stoß Querträger/Innenring;680.8;1346.8;Q5-M;17,04
 Q5-R;T-Stoß Querträger/Innenring;1164.2;1347.8;Q5-R;0,00
-Q7-R;T-Stoß Querträger/Innenring;1130.3;1728.3;;
+Q7-R;T-Stoß Querträger/Innenring;1130.3;1728.3;Q7-M;14,60
 Q7-L;T-Stoß Querträger/Innenring;716.2;1728.3;Q7-L;0,00
-Q1-M;Mittelpunkt Querträger;923.2;778.7;;
+Q1-M;Mittelpunkt Querträger;923.2;778.7;Q1-M;0,00
 Q2-M;Mittelpunkt Querträger;923.3;941.7;Q2-M;0,00
 Q3-M;Mittelpunkt Querträger;922.5;1159.3;Q3-M;0,00
 Q4-M;Mittelpunkt Querträger;922.5;1253.5;Q4-M;0,00
 Q5-M;Mittelpunkt Querträger;922.5;1347.8;Q5-M;0,00
 Q6-M;Mittelpunkt Querträger;923.0;1565.4;Q6-M;0,00
-Q7-M;Mittelpunkt Querträger;923.2;1728.3;;
+Q7-M;Mittelpunkt Querträger;923.2;1728.3;Q7-M;0,00
+A2;Fluter auf Q1;813.7;778.7;Q1-M;7,72
+A1;Fluter auf Q1;835.6;778.7;Q1-M;6,18
+Si30;Fluter auf Q1;871.8;778.7;Q1-M;3,63
+Si31;Fluter auf Q1;886.0;778.7;Q1-M;2,63
+A3;Fluter auf Q1;900.9;778.7;Q1-M;1,58
+A4;Fluter auf Q1;955.4;778.7;Q1-M;2,27
+Si32;Fluter auf Q1;968.2;778.7;Q1-M;3,17
+Si33;Fluter auf Q1;982.4;778.7;Q1-M;4,17
+A5;Fluter auf Q1;1018.5;778.7;Q1-M;6,72
+A6;Fluter auf Q1;1040.5;778.7;Q1-M;8,27
 B1;Fluter auf Q2;693.9;941.7;Q2-M;16,17
 Si34;Fluter auf Q2;722.3;941.7;Q2-M;14,17
 B2;Fluter auf Q2;736.5;941.7;Q2-M;13,17
@@ -170,6 +180,16 @@ A34;Fluter auf Q6;1083.7;1565.4;Q6-M;11,33
 B26;Fluter auf Q6;1109.2;1565.4;Q6-M;13,13
 Si61;Fluter auf Q6;1123.4;1565.4;Q6-M;14,13
 B25;Fluter auf Q6;1151.7;1565.4;Q6-M;16,13
+A35;Fluter auf Q7;805.2;1728.3;Q7-M;8,32
+A36;Fluter auf Q7;827.9;1728.3;Q7-M;6,72
+Si62;Fluter auf Q7;862.6;1728.3;Q7-M;4,28
+Si63;Fluter auf Q7;876.8;1728.3;Q7-M;3,27
+A37;Fluter auf Q7;890.2;1728.3;Q7-M;2,33
+A38;Fluter auf Q7;944.8;1728.3;Q7-M;1,52
+Si64;Fluter auf Q7;958.9;1728.3;Q7-M;2,51
+Si65;Fluter auf Q7;973.2;1728.3;Q7-M;3,52
+A39;Fluter auf Q7;1010.0;1728.3;Q7-M;6,12
+A40;Fluter auf Q7;1032.0;1728.3;Q7-M;7,67
 Ra1;Fluter auf Außenring;922.8;449.1;KA01;4,77
 Ra2;Fluter auf Außenring;1007.8;460.4;KA01;1,53
 Si1;Fluter auf Außenring;1043.3;468.9;KA01;4,07
@@ -365,6 +385,8 @@ Ri71;Fluter auf Innenring;762.7;701.4;KI19;3,05
 Ri72;Fluter auf Innenring;793.1;678.0;KI19;0,36
 Ri73;Fluter auf Innenring;827.5;658.7;KI19;2,35
 Ri74;Fluter auf Innenring;864.0;646.1;KI19;5,07
+VG A1 (A1 - A3);Vorschaltgerät auf Q1;;;Q1-M;5,43
+VG A2 (A4 - A6);Vorschaltgerät auf Q1;;;Q1-M;5,98
 VG B1 (B1 - B2);Vorschaltgerät auf Q2;;;Q2-M;14,91
 VG A3 (A7 - A10);Vorschaltgerät auf Q2;;;Q2-M;7,54
 VG B2 (B3 - B4);Vorschaltgerät auf Q2;;;Q2-M;6,60
@@ -389,3 +411,5 @@ VG B15 (B29 - B30);Vorschaltgerät auf Q6;;;Q6-M;0,00
 VG B14 (B27 - B28);Vorschaltgerät auf Q6;;;Q6-M;6,58
 VG A10 (A31 - A34);Vorschaltgerät auf Q6;;;Q6-M;7,47
 VG B13 (B25 - B26);Vorschaltgerät auf Q6;;;Q6-M;14,86
+VG A11 (A35 - A37);Vorschaltgerät auf Q7;;;Q7-M;5,43
+VG A12 (A38 - A40);Vorschaltgerät auf Q7;;;Q7-M;5,98
