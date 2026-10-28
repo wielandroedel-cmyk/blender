@@ -114,3 +114,4 @@ scripts/modules/_bpy_internal/assets/remote_library/*_openapi.py linguist-genera
 # Plan markup deliverables: stored without LFS (fork cannot host LFS objects)
 Radsportzentrum_Koeln_Traeger_Knotenpunkte*.pdf -filter -diff -merge binary
 Radsportzentrum_Koeln_Traeger_Knotenpunkte*.png -filter -diff -merge binary
+Radsportzentrum_Koeln_Traeger_Punktliste.csv -filter -diff -merge text
