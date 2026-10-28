@@ -170,3 +170,27 @@ A34;Fluter auf Q6;1083.7;1565.4;Q6-M;11,33
 B26;Fluter auf Q6;1109.2;1565.4;Q6-M;13,13
 Si61;Fluter auf Q6;1123.4;1565.4;Q6-M;14,13
 B25;Fluter auf Q6;1151.7;1565.4;Q6-M;16,13
+VG B1 (B1 - B2);Vorschaltgerät auf Q2;;;Q2-M;14,91
+VG A3 (A7 - A10);Vorschaltgerät auf Q2;;;Q2-M;7,54
+VG B2 (B3 - B4);Vorschaltgerät auf Q2;;;Q2-M;6,60
+VG B3 (B5 - B6);Vorschaltgerät auf Q2;;;Q2-M;0,01
+VG B4 (B7 - B8);Vorschaltgerät auf Q2;;;Q2-M;6,52
+VG A4 (A11 - A14);Vorschaltgerät auf Q2;;;Q2-M;7,73
+VG B5 (B9 - B10);Vorschaltgerät auf Q2;;;Q2-M;14,88
+VG B25 (B49 - B52);Vorschaltgerät auf Q3;;;Q3-M;3,94
+VG A5 (A15 - A18);Vorschaltgerät auf Q3;;;Q3-M;0,01
+VG B26 (B53 - B56);Vorschaltgerät auf Q3;;;Q3-M;3,97
+VG A6 (A19 - A20);Vorschaltgerät auf Q4;;;Q4-M;13,91
+VG B27 (B57 - B60);Vorschaltgerät auf Q4;;;Q4-M;3,98
+VG B28 (B61 - B64);Vorschaltgerät auf Q4;;;Q4-M;4,02
+VG A7 (A21 - A22);Vorschaltgerät auf Q4;;;Q4-M;13,78
+VG B29 (B65 - B68);Vorschaltgerät auf Q5;;;Q5-M;3,99
+VG A8 (A23 - A26);Vorschaltgerät auf Q5;;;Q5-M;0,01
+VG B30 (B69 - B72);Vorschaltgerät auf Q5;;;Q5-M;3,95
+VG B17 (B33 - B34);Vorschaltgerät auf Q6;;;Q6-M;14,90
+VG A9 (A27 - A30);Vorschaltgerät auf Q6;;;Q6-M;7,51
+VG B16 (B31 - B32);Vorschaltgerät auf Q6;;;Q6-M;6,58
+VG B15 (B29 - B30);Vorschaltgerät auf Q6;;;Q6-M;0,00
+VG B14 (B27 - B28);Vorschaltgerät auf Q6;;;Q6-M;6,58
+VG A10 (A31 - A34);Vorschaltgerät auf Q6;;;Q6-M;7,47
+VG B13 (B25 - B26);Vorschaltgerät auf Q6;;;Q6-M;14,86
